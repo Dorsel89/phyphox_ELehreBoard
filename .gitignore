@@ -1,0 +1,9 @@
+.build
+.mbed
+projectfiles
+*.py*
+mbed-os
+BUILD
+
+ADS1015
+phyphoxble-mbed-os
