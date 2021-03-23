@@ -17,7 +17,7 @@ float changeRate = 1.5; // decides when the V-value change is high enough
 int multipleValuesAmount =
     300;              // how many values are saved in multiple read functions
 int saveForMult = 25; // how many values are saved before the change of V
-int switchInput = 0;  // 0 = red, 1 = blue
+int switchInput = 1;  // 0 = red, 1 = blue
 
 void receivedData() {
   float readInput;
@@ -116,10 +116,13 @@ void write(float *value) {
 void sendVoltageADS1115(float *readValue) {
   float m, b;
   float Input1L = 0.125 * ads.getLastConversionResults();
+  //m = 0.8746;
+  //b = -161.5;
   m = 0.0155642023;
   b = -17.1060817;
-  // m = (2 * 1.79) / (2651 - 97.5);
-  // b = 1.79 - m * 2651.0;
+  b = b - 10.8045;
+   m = (2 * 1.79) / (2651 - 97.5);
+   b = 1.79 - m * 2651.0;
   float Input1LC = m * Input1L + b;
   if (spikeElimination) {
     if (Input1LC <= 15) {
@@ -277,12 +280,19 @@ void waitAndReadMult(float *oldValue, int prevAmount) {
 }
 
 int main() {
-  ads.startComparator_SingleEnded(switchInput + 1, 4096);
-
-  PhyphoxBLE::start("test");
-  PhyphoxBLE::configHandler = &receivedData;
-  ads.setGain(GAIN_ONE);
   float value[2];
+  PhyphoxBLE::start("test");
+  ads.setGain(GAIN_ONE);
+  ThisThread::sleep_for(30ms);
+  sendVoltageADS1115(value); // ititialize value.
+  if(switchInput == 0) {
+      ads.startComparator_SingleEnded(1, 4096);
+  } else {
+      ads.startComparator_SingleEnded(3, 4096);
+  } 
+
+  PhyphoxBLE::configHandler = &receivedData;
+  
   sendVoltageADS1115(value); // ititialize value.
 
   while (true) {
