@@ -12,7 +12,7 @@ PinName scl = p13; //P0_13;
 PinName sda = p14; 
 PinName rdy = p15;
 
-I2C myI2C(scl, sda);
+I2C myI2C(sda, scl);
 Adafruit_ADS1115 ads(&myI2C);
 Timer t;                        // Used for mode2
 float prevValue = 0;            // Used for writePrev()
@@ -25,6 +25,15 @@ int multipleValuesAmount = 300; // how many values are saved in multiple read fu
 int saveForMult = 25;           // how many values are saved before the voltage-change
 int switchInput = 0;            // 0 = red, 1 = blue
 
+
+void blinkNtimes(int times){
+    for(int i=0;i<times;i++){
+        myLED=!myLED;
+        ThisThread::sleep_for(200ms);
+        myLED=!myLED;
+        ThisThread::sleep_for(200ms);
+    }
+}
 
 /**
     Gets data from PhyPhox app and uses it to switch between modes and inputs
@@ -85,7 +94,7 @@ void writePrev() {
 */
 
 void measureVoltageADS1115(float *readValue) {
-  readValue[0] = ads.computeVolts(ads.readADC_Differential_0_1());                                  // store value.
+  readValue[0] = ads.computeVolts(ads.readADC_Differential_0_1()); 
   readValue[1] = ads.computeVolts(ads.readADC_Differential_2_3());                                  // store value.
 }
 
@@ -184,10 +193,11 @@ void waitAndReadMult(float *value, int prevAmount) {
     or mode 2.
 */
 int main() {
+  myLED=1; //turn led off
   float value[2];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
   ads.setGain(GAIN_TWO);
-  ThisThread::sleep_for(30ms);
+  ThisThread::sleep_for(500ms);
   //sendVoltageADS1115(value);                // initialize value.
   /*
   if (switchInput == 0) {                   // prepare config for the selected input.
@@ -196,23 +206,25 @@ int main() {
     ads.startComparator_SingleEnded(3, 4096);
   }
   */
-
+  
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
 
   while (true) {                            // start loop.
-
+    mode=0;
+    
+    
     switch (mode) {
-    case (1):                               // continuous read + write with respect to spikes
-      measureVoltageADS1115(value);
-      write(value);
-      break;
+    case (1):         
+      //measureVoltageADS1115(value);
+      //write(value);
+      //break;
     case (2):                               // read multiple values if there is a change with respect to spikes
       waitAndReadMult(value, saveForMult);
       break;
-    default:                                // continuous write 1.0
-      float defaultArray[] = {1.0, 1.0};
-      write(defaultArray);
-      break;
+    default:                                
+      blinkNtimes(1);     
+      measureVoltageADS1115(value);
+      write(value);
     }
 
   }

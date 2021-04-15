@@ -6,7 +6,7 @@
     <data-containers>
         <container size="1000" static="false">time</container>
         <container size="1000" static="false">buttonPress</container>
-        <container size="1000" static="false">Output 5</container>
+        <container size="1000" static="false">kanal2</container>
         <container size="1000" static="false">output (1)</container>
         <container size="1000" static="false">Action 1</container>
         <container size="1000" static="false">Output 6</container>
@@ -19,12 +19,12 @@
         <container size="1000" static="false">sum (1)</container>
         <container size="1000" static="false">product (1)</container>
         <container size="1000" static="false">product (3)</container>
-        <container size="1000" static="false">output</container>
+        <container size="1000" static="false">kanal1</container>
     </data-containers>
     <input>
         <bluetooth id="elehre" editor:uuid="171" editor:posx="100" editor:posy="250"  name="elehre"  mode="notification" rate="1" subscribeOnStart="false">
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="0" length="4">output</output>
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="4" length="4">Output 5</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="0" length="4">kanal1</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="4" length="4">kanal2</output>
             <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="8" length="4">Output 6</output>
             <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="12" length="4">mode</output>
             <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="string" extra="time">time</output>
@@ -80,16 +80,23 @@
     </analysis>
     <views>
         <view label="eLehre Board">
-            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Voltage" aspectRatio="2.5" style="lines" lineWidth="1" color="ff0000" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel I" aspectRatio="2.5" style="lines" lineWidth="1" color="ff0000" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
                 <input axis="x">sum (1)</input>
-                <input axis="y">output</input>
+                <input axis="y">kanal1</input>
             </graph>
-            <value editor:uuid="236" editor:posx="1333.28125" editor:posy="489.140625" label="Input" size="1" precision="2" scientific="false"  factor="1" >
-                <input>Output 6</input>
-                <map min="0" max="0">RED</map>
-                <map min="1" max="1">BLUE</map>
-                <map  >ERROR</map>
+            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
+                <input>kanal1</input>
             </value>
+
+        <view label="eLehre Board">
+            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel II" aspectRatio="2.5" style="lines" lineWidth="1" color="ff0000" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">sum (1)</input>
+                <input axis="y">kanal2</input>
+            </graph>
+            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
+                <input>kanal2</input>
+            </value>
+
             <separator editor:uuid="243" height="0.1" color="404040">
             </separator>
             <button editor:uuid="235" editor:posx="950.484375" editor:posy="566.046875" label="Switch Input">
