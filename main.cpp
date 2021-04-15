@@ -21,8 +21,7 @@ float prevTime = 0;             // Used for writePrev()
 // adjustable variables:
 int mode = 1;                   // defines the mode
 float changeRate = 1.15;        // decides when the V-value change is high enough
-int multipleValuesAmount =
-    300;                        // how many values are saved in multiple read functions
+int multipleValuesAmount = 300; // how many values are saved in multiple read functions
 int saveForMult = 25;           // how many values are saved before the voltage-change
 int switchInput = 0;            // 0 = red, 1 = blue
 
