@@ -54,7 +54,7 @@
         </subtract>
         <multiply editor:uuid="223" editor:posx="646.703125" editor:posy="12">
             <input as="factor" clear="false">difference (1)</input>
-            <input as="factor" clear="false">Output 5</input>
+            <input as="factor" clear="false">kanal2</input>
             <output as="product">product (1)</output>
         </multiply>
         <add editor:uuid="224" editor:posx="712.15625" editor:posy="561.9375">
