@@ -30,8 +30,8 @@ int switchInput = 0;            // 0 = red, 1 = blue
     Gets data from PhyPhox app and uses it to switch between modes and inputs
 */
 
-/*
-void receivedData() {           // get data from PhyPhox app
+
+void receivedData() {           // get data from phyphox app
   float readInput;
   PhyphoxBLE::read(readInput);
 
@@ -52,47 +52,43 @@ void receivedData() {           // get data from PhyPhox app
   }
   switchInput = readInput;
 }
-*/
+
 
 /*
     Send data to PhyPhox App.
 
     @param value an array where the value and (if in mode2) the time is stored.
 */
-/*
+
 void write(float *value) {
   float input = switchInput;
   float modeSelected = mode;
   PhyphoxBLE::write(value[0], value[1], input, modeSelected);
 }
-*/
+
 
 /**
     Used to be able to get inputs while being in a loop when waiting for a change in mode2.
 */
-/*
+
 void writePrev() {
   float input = switchInput;
   float modeSelected = mode;
   PhyphoxBLE::write(prevValue, prevTime, input, modeSelected);
 }
-*/
+
 
 /*
     Red pins to get voltage value.
 
     @param readValue The array in which the value should be stored in at position 0.
 */
-/*
-void sendVoltageADS1115(float *readValue) {
-  float m, b;
-  float Input1L = 0.125 * ads.getLastConversionResults();   // read pins
-  m = (2 * 1.79) / (2651 - 97.5);                           // m + b used to map the voltage correctly.
-  b = 1.79 - m * 2651.0;
-  float Input1LC = m * Input1L + b;
-  readValue[0] = Input1LC;                                  // store value.
+
+void measureVoltageADS1115(float *readValue) {
+  readValue[0] = ads.computeVolts(ads.readADC_Differential_0_1());                                  // store value.
+  readValue[1] = ads.computeVolts(ads.readADC_Differential_2_3());                                  // store value.
 }
-*/
+
 
 /*
     Checks if the voltage changed over a given factor.
@@ -101,10 +97,10 @@ void sendVoltageADS1115(float *readValue) {
     @param changeRate the factor which defines how much the value has to change to trigger.
     @return if the value changed (enough).
 */
-/*
+
 bool checkChange(float *oldValue, float changeRate) {
   float newValue[2];
-  sendVoltageADS1115(newValue);
+  measureVoltageADS1115(newValue);
 
   if (changeRate == 0) {                            // error handling.
     return false;
@@ -118,7 +114,7 @@ bool checkChange(float *oldValue, float changeRate) {
   }
   return false;
 }
-*/
+
 
 
 /*
@@ -128,7 +124,7 @@ bool checkChange(float *oldValue, float changeRate) {
     @param value the array where the values will be stored in.
     @param prevAmount the max amount of values which should be saved before the voltage change triggers.
 */
-/*
+
 void waitAndReadMult(float *value, int prevAmount) {
   float prevValues[prevAmount];
   float prevValuesTime[prevAmount];
@@ -137,7 +133,7 @@ void waitAndReadMult(float *value, int prevAmount) {
   float result[2];
   int count = 0;
   int saved = 0;
-  sendVoltageADS1115(value);
+  measureVoltageADS1115(value);
 
   t.start();                                        // start timer
 
@@ -158,7 +154,7 @@ void waitAndReadMult(float *value, int prevAmount) {
     multVal[i] = value[0];
     multValTime[i] =
         duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
-    sendVoltageADS1115(value);
+    measureVoltageADS1115(value);
   }
 
   t.stop();                                                 // stop timer.
@@ -182,7 +178,7 @@ void waitAndReadMult(float *value, int prevAmount) {
   }
 }
 
-*/
+
 /**
     Initialization and loop which uses a switch case to either behave for mode 1
     or mode 2.
@@ -199,14 +195,15 @@ int main() {
   } else {
     ads.startComparator_SingleEnded(3, 4096);
   }
+  */
 
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
-*/
+
   while (true) {                            // start loop.
-/*
+
     switch (mode) {
     case (1):                               // continuous read + write with respect to spikes
-      sendVoltageADS1115(value);
+      measureVoltageADS1115(value);
       write(value);
       break;
     case (2):                               // read multiple values if there is a change with respect to spikes
@@ -217,6 +214,6 @@ int main() {
       write(defaultArray);
       break;
     }
-*/
+
   }
 }
