@@ -5,5 +5,5 @@ projectfiles
 mbed-os
 BUILD
 
-ADS1015
 phyphoxble-mbed-os
+MBED_adafruit_ads1x15

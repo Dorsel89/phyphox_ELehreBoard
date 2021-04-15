@@ -1,11 +1,18 @@
-#include "Adafruit_ADS1015.h"
+#include "Adafruit_ADS1X15.h"
 #include "mbed.h"
 #include "phyphoxBle.h"
 #include "power_save.h"
 #include <chrono>
 #include <cstdint>
 
-I2C myI2C(p15, p16);
+
+DigitalOut myLED(P0_4); //rote led
+
+PinName scl = p13; //P0_13;    
+PinName sda = p14; 
+PinName rdy = p15;
+
+I2C myI2C(scl, sda);
 Adafruit_ADS1115 ads(&myI2C);
 Timer t;                        // Used for mode2
 float prevValue = 0;            // Used for writePrev()
@@ -23,6 +30,8 @@ int switchInput = 0;            // 0 = red, 1 = blue
 /**
     Gets data from PhyPhox app and uses it to switch between modes and inputs
 */
+
+/*
 void receivedData() {           // get data from PhyPhox app
   float readInput;
   PhyphoxBLE::read(readInput);
@@ -44,35 +53,38 @@ void receivedData() {           // get data from PhyPhox app
   }
   switchInput = readInput;
 }
+*/
 
-
-/**
+/*
     Send data to PhyPhox App.
 
     @param value an array where the value and (if in mode2) the time is stored.
 */
+/*
 void write(float *value) {
   float input = switchInput;
   float modeSelected = mode;
   PhyphoxBLE::write(value[0], value[1], input, modeSelected);
 }
-
+*/
 
 /**
     Used to be able to get inputs while being in a loop when waiting for a change in mode2.
 */
+/*
 void writePrev() {
   float input = switchInput;
   float modeSelected = mode;
   PhyphoxBLE::write(prevValue, prevTime, input, modeSelected);
 }
+*/
 
-
-/**
+/*
     Red pins to get voltage value.
 
     @param readValue The array in which the value should be stored in at position 0.
 */
+/*
 void sendVoltageADS1115(float *readValue) {
   float m, b;
   float Input1L = 0.125 * ads.getLastConversionResults();   // read pins
@@ -81,15 +93,16 @@ void sendVoltageADS1115(float *readValue) {
   float Input1LC = m * Input1L + b;
   readValue[0] = Input1LC;                                  // store value.
 }
+*/
 
-
-/**
+/*
     Checks if the voltage changed over a given factor.
 
     @param oldValue the array where the value, which should be compared, is stored in.
     @param changeRate the factor which defines how much the value has to change to trigger.
     @return if the value changed (enough).
 */
+/*
 bool checkChange(float *oldValue, float changeRate) {
   float newValue[2];
   sendVoltageADS1115(newValue);
@@ -106,15 +119,17 @@ bool checkChange(float *oldValue, float changeRate) {
   }
   return false;
 }
+*/
 
 
-/**
+/*
     The main code fore mode 2. It waits until the voltage changed. After that, it reads a given amount of
     values. After reading the values, they will be sent to PhyPhox. 
 
     @param value the array where the values will be stored in.
     @param prevAmount the max amount of values which should be saved before the voltage change triggers.
 */
+/*
 void waitAndReadMult(float *value, int prevAmount) {
   float prevValues[prevAmount];
   float prevValuesTime[prevAmount];
@@ -168,7 +183,7 @@ void waitAndReadMult(float *value, int prevAmount) {
   }
 }
 
-
+*/
 /**
     Initialization and loop which uses a switch case to either behave for mode 1
     or mode 2.
@@ -176,9 +191,10 @@ void waitAndReadMult(float *value, int prevAmount) {
 int main() {
   float value[2];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
-  ads.setGain(GAIN_ONE);
+  ads.setGain(GAIN_TWO);
   ThisThread::sleep_for(30ms);
-  sendVoltageADS1115(value);                // initialize value.
+  //sendVoltageADS1115(value);                // initialize value.
+  /*
   if (switchInput == 0) {                   // prepare config for the selected input.
     ads.startComparator_SingleEnded(1, 4096);
   } else {
@@ -186,9 +202,9 @@ int main() {
   }
 
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
-
+*/
   while (true) {                            // start loop.
-    PhyphoxBLE::poll();                     // used to receive data from PhyPhox.
+/*
     switch (mode) {
     case (1):                               // continuous read + write with respect to spikes
       sendVoltageADS1115(value);
@@ -202,5 +218,6 @@ int main() {
       write(defaultArray);
       break;
     }
+*/
   }
 }
