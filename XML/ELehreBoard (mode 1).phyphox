@@ -88,7 +88,6 @@
                 <input>kanal1</input>
             </value>
 
-        <view label="eLehre Board">
             <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel II" aspectRatio="2.5" style="lines" lineWidth="1" color="ff0000" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
                 <input axis="x">sum (1)</input>
                 <input axis="y">kanal2</input>
