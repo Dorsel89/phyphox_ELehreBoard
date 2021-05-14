@@ -45,7 +45,7 @@ Byte 2 - Byte 3 <br>
 *int16_t* in mV
 
 #### Number of datapoints in Oscilloscope-Mode <a name="Oscilloscope"></a>
-Byte 3 - Byte 4
+Byte 4 - Byte 5
 *uint16_t*
 
 ### Test-Mode *(Byte 0, Bit 0 = 1)* <a name="Test-Mode"></a>
