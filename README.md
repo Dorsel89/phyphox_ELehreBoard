@@ -22,8 +22,8 @@ Byte 0
 
 Bit 7 | Bit 6 | Bit 5 | Bit 4 | Bit 3 | Bit 2 | Bit 1 | Bit 0
 ------|-------|-------|-------|-------|-------|-------|-------
-| | | | 0: Treshold falling edge | 0: Disable CH II| 0: Disable CH I|  0: Live-Mode | 0: Measure-Mode
-| | | | 1: Treshold rising edge | 1: Enable CH II| 1: Enable CH I | 1: Oscilloscope-Mode| 1: Test-Mode
+| | | | 0: Threshold falling edge | 0: Disable CH II| 0: Disable CH I|  0: Live-Mode | 0: Measure-Mode
+| | | | 1: Threshold rising edge | 1: Enable CH II| 1: Enable CH I | 1: Oscilloscope-Mode| 1: Test-Mode
 
 
 ### Measure-Mode *(Byte 0, Bit 0 = 0)* <a name="Measure-Mode"></a>
@@ -40,7 +40,7 @@ Value| SPS ADS1115  | SPS Internal ADC
 0xC0  | 475 |
 0xE0  | 860 |
 
-#### Treshold *(Oscilloscope-Mode)*
+#### Threshold *(Oscilloscope-Mode)*
 Byte 2 - Byte 3 <br>
 *int16_t* in mV
 
