@@ -1,5 +1,5 @@
 
-# phyphox_ELehreBoard
+# phyphox ELehreBoard
 1. [phyphox Experiments](#qr)
 2. [Configuration](#config)
    * [Measure-Mode](#Measure-Mode)
@@ -40,7 +40,7 @@ Value| SPS ADS1115  | SPS Internal ADC
 0xC0  | 475 |
 0xE0  | 860 |
 
-#### Treshold *(Fast-Mode)*
+#### Treshold *(Oscilloscope-Mode)*
 Byte 2 - Byte 3 <br>
 *int16_t* in mV
 
