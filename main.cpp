@@ -125,14 +125,16 @@ float calibrateVoltage(float raw){
 
 void measureVoltageADS1115(float *readValue) {
   float timestamp = duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
-  readValue[2]=timestamp;
+  
   if(CHI){
-    readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1())); 
+    readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1()));
+    readValue[2]=timestamp; 
   }else {
     readValue[0]=0;
   }
   if(CHII){
     readValue[1] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_2_3()));                                  // store value.
+    readValue[3]=timestamp;
   }else {
     readValue[1]=0;
   }
@@ -313,7 +315,7 @@ void runTESTMODE(){
 int main() {
   //power_save();
   myLED=1; //turn led off
-  float value[3];                           // the array where the values should be stored in.
+  float value[4];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
 
 
@@ -356,7 +358,7 @@ while (true) {                            // start loop.
                 if(!internalADC){
                     measureVoltageADS1115(value);
                 }
-                PhyphoxBLE::write(value[0],value[1],value[2]);                 
+                PhyphoxBLE::write(value[0],value[1],value[2],value[3]);                 
             }
             
         }
