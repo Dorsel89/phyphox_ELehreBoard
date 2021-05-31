@@ -1,0 +1,111 @@
+<phyphox xmlns="http://phyphox.org/xml" xmlns:editor="http://phyphox.org/editor/xml" version="1.9" editor:version="1.0" locale="en">
+    <title>Live Mode</title>
+    <category>E-Lehre</category>
+    <description>Measureing Voltage on both Channels in Live-Mode.</description>
+    <icon format="string">ELB</icon>
+    <data-containers>
+        <container size="0" static="false">time</container>
+        <container size="0" static="false">channelI</container>
+        <container size="0" static="false">channelII</container>
+
+        <container size="1000" static="false">kanal2</container>
+        <container size="1000" static="false">output (1)</container>
+        <container size="1000" static="false">Action 1</container>
+        <container size="1000" static="false">Output 6</container>
+        <container size="1000" static="false">product</container>
+        <container size="1000" static="false">sum</container>
+        <container size="1000" static="false">mode</container>
+        <container size="1000" static="false">difference (1)</container>
+        <container size="1000" static="false">difference (2)</container>
+        <container size="1000" static="false">product (2)</container>
+        <container size="1000" static="false">sum (1)</container>
+        <container size="1000" static="false">product (1)</container>
+        <container size="1000" static="false">product (3)</container>
+        <container size="1000" static="false">kanal1</container>
+    </data-containers>
+    <input>
+        <bluetooth id="elehre" editor:uuid="171" editor:posx="100" editor:posy="250"  name="elehre"  mode="notification" rate="1" subscribeOnStart="false">
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="0" length="4">kanal1</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="4" length="4">kanal2</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="8" length="4">Output 6</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="12" length="4">mode</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="string" extra="time">time</output>
+        </bluetooth>
+    </input>
+    <output>
+        <bluetooth id="elehre" editor:uuid="174" editor:posx="650" editor:posy="250"  name="elehre" >
+            <config char="cddf1003-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian">3</config>
+            <input char="cddf1003-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian">Action 1</input>
+        </bluetooth>
+    </output>
+    <analysis sleep="0"  onUserInput="false">
+        <subtract editor:uuid="220" editor:posx="388.359375" editor:posy="112.8125">
+            <input as="minuend" clear="false">mode</input>
+            <input as="subtrahend" type="value">1</input>
+            <output as="difference">difference (1)</output>
+        </subtract>
+        <multiply editor:uuid="221" editor:posx="485.921875" editor:posy="562.109375">
+            <input as="factor" clear="false">Output 6</input>
+            <input as="factor" type="value">-1</input>
+            <output as="product">product</output>
+        </multiply>
+        <subtract editor:uuid="222" editor:posx="642.046875" editor:posy="158.546875">
+            <input as="minuend" type="value">1</input>
+            <input as="subtrahend" clear="false">difference (1)</input>
+            <output as="difference">difference (2)</output>
+        </subtract>
+        <multiply editor:uuid="223" editor:posx="646.703125" editor:posy="12">
+            <input as="factor" clear="false">difference (1)</input>
+            <input as="factor" clear="false">kanal2</input>
+            <output as="product">product (1)</output>
+        </multiply>
+        <add editor:uuid="224" editor:posx="712.15625" editor:posy="561.9375">
+            <input as="summand" clear="false">product</input>
+            <input as="summand" type="value">1</input>
+            <output as="sum">sum</output>
+        </add>
+        <multiply editor:uuid="225" editor:posx="879.78125" editor:posy="13.015625">
+            <input as="factor" clear="false">product (1)</input>
+            <input as="factor" type="value">0.001</input>
+            <output as="product">product (3)</output>
+        </multiply>
+        <multiply editor:uuid="226" editor:posx="883.140625" editor:posy="156.421875">
+            <input as="factor" clear="false">difference (2)</input>
+            <input as="factor" clear="false">time</input>
+            <output as="product">product (2)</output>
+        </multiply>
+        <add editor:uuid="227" editor:posx="1104.140625" editor:posy="68">
+            <input as="summand" clear="false">product (3)</input>
+            <input as="summand" clear="false">product (2)</input>
+            <output as="sum">sum (1)</output>
+        </add>
+    </analysis>
+    <views>
+        <view label="eLehre Board">
+            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel I" aspectRatio="2.5" style="lines" lineWidth="1" color="ff2800" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">sum (1)</input>
+                <input axis="y">kanal1</input>
+            </graph>
+            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
+                <input>kanal1</input>
+            </value>
+
+            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel II" aspectRatio="2.5" style="lines" lineWidth="1" color="5a91c7" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">sum (1)</input>
+                <input axis="y">kanal2</input>
+            </graph>
+            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
+                <input>kanal2</input>
+            </value>
+
+            <separator editor:uuid="243" height="0.1" color="404040">
+            </separator>
+            <button editor:uuid="235" editor:posx="950.484375" editor:posy="566.046875" label="Switch Input">
+                <input>sum</input>
+                <output>Action 1</output>
+            </button>
+        </view>
+    </views>
+    <export>
+    </export>
+</phyphox>

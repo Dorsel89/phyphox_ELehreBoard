@@ -5,12 +5,45 @@
 #include <chrono>
 #include <cstdint>
 
+#define TESTMODUS_GND 1
+#define TESTMODUS_P12 2
+#define TESTMODUS_N12 3
+#define TESTMODUS_SIN 4
+
+#define MODE_DUAL_ADS1115 0
+#define MODE_FAST01_ADS1115 1
+#define MODE_FAST23_ADS1115 2
+#define MODE_FAST_ONBOARD 3
+
+bool zeroRuns=true;
+
+bool testMode = false;
+bool CHI =false;
+bool CHII =false;
+bool fastMode = false;
+bool risingEdge = false;
+bool internalADC = false;
+
+float threshold =0;
 
 DigitalOut myLED(P0_4); //rote led
+//AnalogIn onBoardADC1(P0_4); //rote led
 
 PinName scl = p13; //P0_13;    
 PinName sda = p14; 
 PinName rdy = p15;
+
+//float R1 =68;
+//float R2 =480;
+
+float R1 =10;
+float R2 =130;
+
+DigitalIn adcReady(rdy);
+
+uint8_t configData[20];
+
+uint16_t currentDataRate = RATE_ADS1115_64SPS;
 
 I2C myI2C(sda, scl);
 Adafruit_ADS1115 ads(&myI2C);
@@ -19,11 +52,11 @@ float prevValue = 0;            // Used for writePrev()
 float prevTime = 0;             // Used for writePrev()
 
 // adjustable variables:
-int mode = 1;                   // defines the mode
-float changeRate = 1.15;        // decides when the V-value change is high enough
-int multipleValuesAmount = 300; // how many values are saved in multiple read functions
-int saveForMult = 25;           // how many values are saved before the voltage-change
-int switchInput = 0;            // 0 = red, 1 = blue
+
+uint16_t multipleValuesAmount = 100; // how many values are saved in multiple read functions
+
+int ledCounter=0;
+LowPowerTicker  powerOnBlink;
 
 
 void blinkNtimes(int times){
@@ -33,60 +66,57 @@ void blinkNtimes(int times){
         myLED=!myLED;
         ThisThread::sleep_for(200ms);
     }
+ }
+void powerOn() {
+    if(ledCounter==19){
+        myLED = 0;
+        ledCounter=0;
+    }else {
+        myLED = 1;
+        ledCounter+=1;
+    }
+    
+}
+
+
+
+bool getNBit(uint8_t byte, int position){
+    return byte & (1<<position);
 }
 
 /**
     Gets data from PhyPhox app and uses it to switch between modes and inputs
 */
-
-
 void receivedData() {           // get data from phyphox app
-  float readInput;
-  PhyphoxBLE::read(readInput);
-
-  if (readInput > 1) {          // config 3 = mode1, 4 = mode2
-    mode = readInput - 2;
-    t.stop();                   // stop reset timer.
-    t.reset();
-    ThisThread::sleep_for(20ms);
-    return;
+  PhyphoxBLE::read(&configData[0],20);
+  t.reset();
+  testMode = getNBit(configData[0],0);  //false
+  if(testMode){
+    CHI=1;
+    CHII=1;
+  }else {
+    fastMode = getNBit(configData[0],1);
+    CHI = getNBit(configData[0],2);
+    CHII = getNBit(configData[0],3);
+    risingEdge = getNBit(configData[0],4);
+    internalADC = getNBit(configData[0],5);
+    uint16_t targetRate = configData[1];
+    ads.setDataRate(targetRate);
+    int16_t thresholdINT = (configData[2] | (configData[3] < 8));
+    threshold = thresholdINT/1000.0;
+    multipleValuesAmount = (configData[5] | (configData[4] < 8));
   }
 
-  if (readInput != switchInput) {   // used to switch input
-    if (readInput == 0) {
-      ads.startComparator_SingleEnded(1, 4096);
-    } else {
-      ads.startComparator_SingleEnded(3, 4096);
-    }
-  }
-  switchInput = readInput;
 }
-
-
-/*
-    Send data to PhyPhox App.
-
-    @param value an array where the value and (if in mode2) the time is stored.
-*/
-
-void write(float *value) {
-  float input = switchInput;
-  float modeSelected = mode;
-  PhyphoxBLE::write(value[0], value[1], input, modeSelected);
-}
-
 
 /**
     Used to be able to get inputs while being in a loop when waiting for a change in mode2.
 */
 
-void writePrev() {
-  float input = switchInput;
-  float modeSelected = mode;
-  PhyphoxBLE::write(prevValue, prevTime, input, modeSelected);
+
+float calibrateVoltage(float raw){
+    return (-1*raw*R2/R1 +0.025187502);
 }
-
-
 /*
     Red pins to get voltage value.
 
@@ -94,37 +124,19 @@ void writePrev() {
 */
 
 void measureVoltageADS1115(float *readValue) {
-  readValue[0] = ads.computeVolts(ads.readADC_Differential_0_1()); 
-  readValue[1] = ads.computeVolts(ads.readADC_Differential_2_3());                                  // store value.
-}
-
-
-/*
-    Checks if the voltage changed over a given factor.
-
-    @param oldValue the array where the value, which should be compared, is stored in.
-    @param changeRate the factor which defines how much the value has to change to trigger.
-    @return if the value changed (enough).
-*/
-
-bool checkChange(float *oldValue, float changeRate) {
-  float newValue[2];
-  measureVoltageADS1115(newValue);
-
-  if (changeRate == 0) {                            // error handling.
-    return false;
-  } else if (oldValue[0] >= newValue[0] * changeRate ||
-             oldValue[0] <= newValue[0] * (1 / changeRate)) {
-    oldValue[0] = newValue[0];
-    return true;                                    // value has changed (enough).
-  } else {
-    oldValue[0] = newValue[0];
-    return false;                                   // value has not changed (enough).
+  float timestamp = duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
+  readValue[2]=timestamp;
+  if(CHI){
+    readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1())); 
+  }else {
+    readValue[0]=0;
   }
-  return false;
+  if(CHII){
+    readValue[1] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_2_3()));                                  // store value.
+  }else {
+    readValue[1]=0;
+  }
 }
-
-
 
 /*
     The main code fore mode 2. It waits until the voltage changed. After that, it reads a given amount of
@@ -134,98 +146,225 @@ bool checkChange(float *oldValue, float changeRate) {
     @param prevAmount the max amount of values which should be saved before the voltage change triggers.
 */
 
-void waitAndReadMult(float *value, int prevAmount) {
-  float prevValues[prevAmount];
-  float prevValuesTime[prevAmount];
+void waitAndReadMult(float *value) {
+
   float multVal[multipleValuesAmount];
   float multValTime[multipleValuesAmount];
   float result[2];
-  int count = 0;
-  int saved = 0;
-  measureVoltageADS1115(value);
 
-  t.start();                                        // start timer
+  if(CHI){//CHannel 1-2
+      ads.con_diffEnded(1); 
+  }else {//channel 2-3
+      ads.con_diffEnded(0);     
+  }
+  
 
-  while (!checkChange(value, changeRate)) {         // wait until voltage-change is high enough.
-    prevValues[count] = value[0];                   // save up to prevAmount values and times.
-    prevValuesTime[count] =
-        duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
-    saved++;
-    if (saved >= prevAmount) {                      // do not exceed prevAmount
-      saved = prevAmount - 1;
+int counter = 0;
+bool triggerFired = false;
+float voltagebuffer[2];
+float timeBuffer[2];
+bool firstValue = false;
+t.reset();
+t.start();
+ while (counter<multipleValuesAmount) {
+
+    if(adcReady==0 && !triggerFired && counter < 2){
+        float voltage = calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
+        if(!firstValue){
+            voltagebuffer[0]=voltage;
+            timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();        
+            firstValue=true;
+            continue;
+        }else if(firstValue && !triggerFired){
+            voltagebuffer[1] = voltagebuffer[0];
+            voltagebuffer[0] = voltage;
+            timeBuffer[1]=timeBuffer[0];
+            timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
+
+        }
+        if(risingEdge && voltagebuffer[0]>threshold && voltagebuffer[1]<threshold){
+            triggerFired = true;
+            counter=2;
+            multVal[0]=voltagebuffer[1];
+            multVal[1]=voltagebuffer[0];
+            multValTime[1] = timeBuffer[0];
+            multValTime[0] = timeBuffer[1];
+        }else if (!risingEdge && voltagebuffer[0]<threshold && voltagebuffer[1]>threshold) {
+            triggerFired = true;
+            counter=2;
+            multVal[0]=voltagebuffer[1];
+            multVal[1]=voltagebuffer[0];
+            multValTime[1] = timeBuffer[0];
+            multValTime[0] = timeBuffer[1];
+        }
     }
-    count = (count + 1) % prevAmount;       // more than prevAmount -> start from beginning
-                                            //          and save prevAmount-1 values before.
-    writePrev();                            // used to still read data from PhyPhox while waiting in the loop.
-  }
 
-  for (int i = saved; i < multipleValuesAmount; i++) {      // read alltogether multipleValuesAmount values.
-    multVal[i] = value[0];
-    multValTime[i] =
-        duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
-    measureVoltageADS1115(value);
-  }
-
-  t.stop();                                                 // stop timer.
-
-  for (int i = 0; i < saved; i++) {             // store the previous saved prevAmount values 
-                                                //          in the same array with the rest.
-    multVal[i] = prevValues[(count + i - saved) % prevAmount];
-    multValTime[i] = prevValuesTime[(count + i - saved) % prevAmount];
-  }
-
-  for (int i = 0; i < multipleValuesAmount; i++) {          // send all values to PhyPhox.
-    result[0] = multVal[i];
-    result[1] = multValTime[i];
-
-    if (result[1] >= 1) {
-      write(result);                    // used to send value together with further information.
+    if(adcReady==0 && triggerFired){
+        multVal[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
+        multValTime[counter]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();    
+        counter++;
     }
-    ThisThread::sleep_for(5ms);
-    prevValue = result[0];
-    prevTime = result[1];
-  }
+}
+t.stop();
+for (int i=0; i<multipleValuesAmount; i++) {
+    result[0]  =multVal[i];
+    result[1]  =multValTime[i]-multValTime[0];
+    PhyphoxBLE::write(result[0],result[1]);
+    ThisThread::sleep_for(20ms);
 }
 
+ ThisThread::sleep_for(10s);
+}
+
+
+//###################################################
+void runTESTMODE(){
+
+    int nGND;
+    int nP12;
+    int nN12;
+    int nSIN;
+    
+    float buf[3];
+    int delayMS = 0;
+    // GROUND TEST
+    bool GND=0;
+    while (testMode && configData[1]==0) {
+        ThisThread::sleep_for(100ms);
+    }
+    
+    while(testMode && configData[1]==1){
+        nGND = configData[2];
+        if(!GND){
+            ThisThread::sleep_for(1s);
+            for(int i=0;i<nGND;i++){
+                measureVoltageADS1115(buf);
+                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
+                ThisThread::sleep_for(delayMS*1ms);
+            }
+            GND=true;
+        }
+        ThisThread::sleep_for(100ms);
+    }
+    
+    // +12V TEST    ###################################################
+    
+    bool P12 = false;
+    while(testMode && configData[1]==2){
+        nP12 = configData[2];
+        if(!P12){
+            ThisThread::sleep_for(1s);
+            for(int i=0;i<nP12;i++){
+                measureVoltageADS1115(buf);
+                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
+                ThisThread::sleep_for(delayMS*1ms);
+            }
+            P12=true;
+            
+        }  
+        ThisThread::sleep_for(100ms);
+    }
+    
+
+    // -12V TEST    ###################################################
+    bool N12 = false;
+    while(testMode && configData[1]==3){
+        nN12 = configData[2];
+        if(!N12){
+            ThisThread::sleep_for(1s);
+            for(int i=0;i<nN12;i++){
+                measureVoltageADS1115(buf);
+                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
+                ThisThread::sleep_for(delayMS*1ms);            
+            }
+            N12=true;
+        }
+        ThisThread::sleep_for(100ms);
+    }
+    
+
+    // SIN TEST ###################################################
+    bool sinus = false;
+    while(testMode && configData[1]==4){
+        nSIN = configData[2];
+        if(!sinus){
+            ThisThread::sleep_for(1s);
+            for(int i=0;i<nSIN;i++){
+                measureVoltageADS1115(buf);
+                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
+                ThisThread::sleep_for(delayMS*1ms);
+            }
+            sinus=true;
+        }
+        ThisThread::sleep_for(100ms);
+    }
+    ThisThread::sleep_for(100ms);
+
+
+    //measureVoltageADS1115(buf);
+    //write(buf);
+
+}
 
 /**
     Initialization and loop which uses a switch case to either behave for mode 1
     or mode 2.
 */
 int main() {
+  //power_save();
   myLED=1; //turn led off
-  float value[2];                           // the array where the values should be stored in.
+  float value[3];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
+
+
   ads.setGain(GAIN_TWO);
+  ads.setDataRate(currentDataRate);
   ThisThread::sleep_for(500ms);
-  //sendVoltageADS1115(value);                // initialize value.
-  /*
-  if (switchInput == 0) {                   // prepare config for the selected input.
-    ads.startComparator_SingleEnded(1, 4096);
-  } else {
-    ads.startComparator_SingleEnded(3, 4096);
-  }
-  */
+
+    
+    t.reset();
+    t.start();
   
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
+  //multipleValuesAmount=100;
 
-  while (true) {                            // start loop.
-    mode=0;
+  powerOnBlink.attach(&powerOn,100ms);
+
+while (true) {                            // start loop.
+    //ThisThread::sleep_for(100ms);
     
-    
-    switch (mode) {
-    case (1):         
-      //measureVoltageADS1115(value);
-      //write(value);
-      //break;
-    case (2):                               // read multiple values if there is a change with respect to spikes
-      waitAndReadMult(value, saveForMult);
-      break;
-    default:                                
-      blinkNtimes(1);     
-      measureVoltageADS1115(value);
-      write(value);
+    if(PhyphoxBLE::activeConnections>0){
+        
+        if(testMode){
+            //TESTMODE
+            //myLED=1;
+            if(zeroRuns==true){
+                zeroRuns=false;
+                CHI=1;
+                CHII=1;
+                runTESTMODE();
+                
+            }
+        }else if(!testMode) {
+            //MEASUREMENT MODE
+            
+            if(fastMode){
+                //FASTMODE
+                waitAndReadMult(value);                
+            }else if(!fastMode) {
+                //LIVE MODE
+                if(!internalADC){
+                    measureVoltageADS1115(value);
+                }
+                PhyphoxBLE::write(value[0],value[1],value[2]);                 
+            }
+            
+        }
     }
-
+    else {
+        ThisThread::sleep_for(100ms);
+    }
+    
   }
 }
+
