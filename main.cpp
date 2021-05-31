@@ -1,4 +1,4 @@
-#include "Adafruit_ADS1X15.h"
+#include "ADS1X15.h"
 #include "mbed.h"
 #include "phyphoxBle.h"
 #include "power_save.h"
