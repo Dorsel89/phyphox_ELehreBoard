@@ -24,6 +24,8 @@ bool fastMode = false;
 bool risingEdge = false;
 bool internalADC = false;
 
+
+
 float threshold =0;
 
 DigitalOut myLED(P0_4); //rote led
@@ -124,17 +126,17 @@ float calibrateVoltage(float raw){
 */
 
 void measureVoltageADS1115(float *readValue) {
-  float timestamp = duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
   
   if(CHI){
     readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1()));
-    readValue[2]=timestamp; 
+    readValue[2] = 0.001*duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
+   
   }else {
     readValue[0]=0;
   }
   if(CHII){
     readValue[1] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_2_3()));                                  // store value.
-    readValue[3]=timestamp;
+    readValue[3]= 0.001*duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
   }else {
     readValue[1]=0;
   }
