@@ -1,109 +1,79 @@
 <phyphox xmlns="http://phyphox.org/xml" xmlns:editor="http://phyphox.org/editor/xml" version="1.9" editor:version="1.0" locale="en">
-    <title>Live Mode</title>
-    <category>E-Lehre</category>
-    <description>Measureing Voltage on both Channels in Live-Mode.</description>
-    <icon format="string">ELB</icon>
+    <title>ELehre Live</title>
+    <category>phyphox hardware</category>
+    <color>ffbe1a</color>
+    <description></description>
+    <icon format="base64">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</icon>
     <data-containers>
-        <container size="0" static="false">time</container>
-        <container size="0" static="false">channelI</container>
-        <container size="0" static="false">channelII</container>
-
-        <container size="1000" static="false">kanal2</container>
+        <container size="1000" static="false">Output 1</container>
+        <container size="1000" static="false">output</container>
+        <container size="1000" static="false">quotient</container>
+        <container size="1000" static="false">average</container>
         <container size="1000" static="false">output (1)</container>
-        <container size="1000" static="false">Action 1</container>
-        <container size="1000" static="false">Output 6</container>
-        <container size="1000" static="false">product</container>
-        <container size="1000" static="false">sum</container>
-        <container size="1000" static="false">mode</container>
-        <container size="1000" static="false">difference (1)</container>
-        <container size="1000" static="false">difference (2)</container>
-        <container size="1000" static="false">product (2)</container>
-        <container size="1000" static="false">sum (1)</container>
-        <container size="1000" static="false">product (1)</container>
-        <container size="1000" static="false">product (3)</container>
-        <container size="1000" static="false">kanal1</container>
+        <container size="1000" static="false">Output 3</container>
+        <container size="1000" static="false">Output 4</container>
     </data-containers>
     <input>
-        <bluetooth id="elehre" editor:uuid="171" editor:posx="100" editor:posy="250"  name="elehre"  mode="notification" rate="1" subscribeOnStart="false">
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="0" length="4">kanal1</output>
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="4" length="4">kanal2</output>
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="8" length="4">Output 6</output>
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="12" length="4">mode</output>
-            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="string" extra="time">time</output>
+        <bluetooth editor:uuid="101"  name="elehre"  mode="notification" rate="1" subscribeOnStart="false">
+            <config char="cddf1003-30f7-4671-8b43-5e40ba53514a" conversion="hexadecimal">0C80</config>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian">Output 1</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="8">output (1)</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="4">Output 3</output>
+            <output char="cddf1002-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian" offset="12">Output 4</output>
         </bluetooth>
     </input>
     <output>
-        <bluetooth id="elehre" editor:uuid="174" editor:posx="650" editor:posy="250"  name="elehre" >
-            <config char="cddf1003-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian">3</config>
-            <input char="cddf1003-30f7-4671-8b43-5e40ba53514a" conversion="float32LittleEndian">Action 1</input>
-        </bluetooth>
     </output>
     <analysis sleep="0"  onUserInput="false">
-        <subtract editor:uuid="220" editor:posx="388.359375" editor:posy="112.8125">
-            <input as="minuend" clear="false">mode</input>
-            <input as="subtrahend" type="value">1</input>
-            <output as="difference">difference (1)</output>
-        </subtract>
-        <multiply editor:uuid="221" editor:posx="485.921875" editor:posy="562.109375">
-            <input as="factor" clear="false">Output 6</input>
-            <input as="factor" type="value">-1</input>
-            <output as="product">product</output>
-        </multiply>
-        <subtract editor:uuid="222" editor:posx="642.046875" editor:posy="158.546875">
-            <input as="minuend" type="value">1</input>
-            <input as="subtrahend" clear="false">difference (1)</input>
-            <output as="difference">difference (2)</output>
-        </subtract>
-        <multiply editor:uuid="223" editor:posx="646.703125" editor:posy="12">
-            <input as="factor" clear="false">difference (1)</input>
-            <input as="factor" clear="false">kanal2</input>
-            <output as="product">product (1)</output>
-        </multiply>
-        <add editor:uuid="224" editor:posx="712.15625" editor:posy="561.9375">
-            <input as="summand" clear="false">product</input>
-            <input as="summand" type="value">1</input>
-            <output as="sum">sum</output>
-        </add>
-        <multiply editor:uuid="225" editor:posx="879.78125" editor:posy="13.015625">
-            <input as="factor" clear="false">product (1)</input>
-            <input as="factor" type="value">0.001</input>
-            <output as="product">product (3)</output>
-        </multiply>
-        <multiply editor:uuid="226" editor:posx="883.140625" editor:posy="156.421875">
-            <input as="factor" clear="false">difference (2)</input>
-            <input as="factor" clear="false">time</input>
-            <output as="product">product (2)</output>
-        </multiply>
-        <add editor:uuid="227" editor:posx="1104.140625" editor:posy="68">
-            <input as="summand" clear="false">product (3)</input>
-            <input as="summand" clear="false">product (2)</input>
-            <output as="sum">sum (1)</output>
-        </add>
+        <divide editor:uuid="149" editor:posx="873.84375" editor:posy="576.5625">
+            <input as="dividend" clear="false">Output 1</input>
+            <input as="divisor" clear="false">output</input>
+            <input as="divisor" type="value">0.001</input>
+            <output as="quotient">quotient</output>
+        </divide>
+        <average editor:uuid="150" editor:posx="1224.46875" editor:posy="817.640625">
+            <input as="buffer" clear="false">quotient</input>
+            <output as="average">average</output>
+        </average>
     </analysis>
     <views>
-        <view label="eLehre Board">
-            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel I" aspectRatio="2.5" style="lines" lineWidth="1" color="ff2800" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
-                <input axis="x">sum (1)</input>
-                <input axis="y">kanal1</input>
+        <view label="Amperemeter CH I">
+            <graph editor:uuid="157" editor:posx="874.09375" editor:posy="159.609375" label="Voltage" aspectRatio="2.5" style="lines" lineWidth="1" color="ff7e22" partialUpdate="false" history="1" labelX="" labelY="" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">output (1)</input>
+                <input axis="y">Output 1</input>
             </graph>
-            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
-                <input>kanal1</input>
+            <value editor:uuid="158" editor:posx="872.5625" editor:posy="314.859375" label="" size="1" precision="3" scientific="false" unit="V" factor="1" >
+                <input>Output 1</input>
             </value>
-
-            <graph editor:uuid="234" editor:posx="1332.078125" editor:posy="202.578125" label="Channel II" aspectRatio="2.5" style="lines" lineWidth="1" color="5a91c7" partialUpdate="false" history="1" labelX="t" labelY="U" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
-                <input axis="x">sum (1)</input>
-                <input axis="y">kanal2</input>
+            <graph editor:uuid="159" editor:posx="1225.84375" editor:posy="483.71875" label="Current" aspectRatio="2.5" style="lines" lineWidth="1" color="ff7e22" partialUpdate="false" history="1" labelX="s" labelY="mA" labelZ="" unitX="" unitY="" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">output (1)</input>
+                <input axis="y">quotient</input>
             </graph>
-            <value editor:uuid="104" editor:posx="773" editor:posy="323.4749984741211" label="" size="1" precision="2" scientific="false"  factor="1" >
-                <input>kanal2</input>
+            <value editor:uuid="160" editor:posx="1218.984375" editor:posy="660.03125" label="" size="1" precision="3" scientific="false" unit="mA" factor="1" >
+                <input>quotient</input>
             </value>
-
-            <separator editor:uuid="243" height="0.1" color="404040">
-            </separator>
-            <button editor:uuid="235" editor:posx="950.484375" editor:posy="566.046875" label="Switch Input">
-                <input>sum</input>
-                <output>Action 1</output>
-            </button>
+            <value editor:uuid="161" editor:posx="1512.609375" editor:posy="829.015625" label="average current" size="1" precision="3" scientific="false" unit="mA" factor="1" >
+                <input>average</input>
+            </value>
+            <edit editor:uuid="162" editor:posx="584.7698698043823" editor:posy="615.8920402526855" label="Resistor" signed="false" decimal="false"   unit="Ω" factor="1" default="10">
+                <output>output</output>
+            </edit>
+        </view>
+        <view label="Rawdata Voltage">
+            <graph editor:uuid="163" editor:posx="1159.5937223434448" editor:posy="99.5653190612793" label="CH I" aspectRatio="2.5" style="lines" lineWidth="1" color="ff7e22" partialUpdate="false" history="1" labelX="" labelY="" labelZ="" unitX="s" unitY="V" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">output (1)</input>
+                <input axis="y">Output 1</input>
+            </graph>
+            <value editor:uuid="164" editor:posx="1158.3096647262573" editor:posy="260.4403190612793" label="CH I" size="1" precision="3" scientific="false" unit="V" factor="1" >
+                <input>Output 1</input>
+            </value>
+            <graph editor:uuid="165" editor:posx="353.4857511520386" editor:posy="468.53693771362305" label="CH II" aspectRatio="2.5" style="lines" lineWidth="1" color="ff7e22" partialUpdate="false" history="1" labelX="" labelY="V" labelZ="" unitX="s" unitY="" unitZ="" logX="false" logY="false" logZ="false" xPrecision="3" yPrecision="3" zPrecision="3" scaleMinX="auto" scaleMaxX="auto" scaleMinY="auto" scaleMaxY="auto" scaleMinZ="auto" scaleMaxZ="auto" minX="0" maxX="0" minY="0" maxY="0" minZ="0" maxZ="0"  mapWidth="0"       >
+                <input axis="x">Output 4</input>
+                <input axis="y">Output 3</input>
+            </graph>
+            <value editor:uuid="166" editor:posx="349.0056486129761" editor:posy="617.7187004089355" label="CH II" size="1" precision="3" scientific="false" unit="V" factor="1" >
+                <input>Output 3</input>
+            </value>
         </view>
     </views>
     <export>
