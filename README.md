@@ -9,13 +9,10 @@
 4. [Test-Results](#Test-Results)
 
 ## phyphox Experiments <a name="qr"></a>
-Mode 1
+Livemode + Amperemeter feature
 
-![Mode 1](XML/ELehreBoardMode1_dominik.png?raw=true "Mode 1")
+![Livemode](XML/elehrelivemode.png?raw=true "Livemode")
 
-Mode 2
-
-![Mode 2](XML/ELehreBoardMode2_dominik.png?raw=true "Mode 2")
 
 ## Config <a name="config"></a>
 Byte 0
