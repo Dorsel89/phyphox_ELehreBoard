@@ -23,21 +23,25 @@
         </bluetooth>
     </output>
     <analysis sleep="0.1"  onUserInput="false">
-        <count editor:uuid="248" editor:posx="387.6875" editor:posy="540.078125">
-            <input as="buffer" clear="false">voltage</input>
-            <output as="count">count</output>
-        </count>
-        <append editor:uuid="220" editor:posx="576.21875" editor:posy="67.625">
-            <input as="in" type="value">0</input>
-            <output as="out">buttonStatusBuffer</output>
-        </append>
+
         <if editor:uuid="219" editor:posx="1070.8125" editor:posy="96.34375" less="false" equal="true" greater="false">
             <input as="a" clear="false">buttonStatusBuffer</input>
             <input as="b" type="value">1</input>
             <input as="true" type="value">1</input>
             <input as="false" type="empty" />
-            <output as="result">result</output>
+            <output clear="true" as="result">result</output>
         </if>
+		
+		<append editor:uuid="220" editor:posx="576.21875" editor:posy="67.625">
+            <input as="in" type="value">0</input>
+            <output as="out">buttonStatusBuffer</output>
+        </append>
+		
+		<count editor:uuid="248" editor:posx="387.6875" editor:posy="540.078125">
+            <input as="buffer" clear="false">voltage</input>
+            <output as="count">count</output>
+        </count>
+		
     </analysis>
     <views>
         <view label="Measurement">
