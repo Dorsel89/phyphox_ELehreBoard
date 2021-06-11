@@ -9,16 +9,22 @@
 4. [Test-Results](#Test-Results)
 
 ## phyphox Experiments <a name="qr"></a>
-Mode 1
+**Livemode + Amperemeter feature**
 
-![Mode 1](XML/ELehreBoardMode1_dominik.png?raw=true "Mode 1")
+![Livemode](XML/elehrelivemode.png?raw=true "Livemode")
+<br>
+**Oscilloscope-Mode** <br>
+HEX Config: 16E00064012C <br>
+byte 0: 0x16, binary 00010110 <br>
+Byte 1: 0xE0, 860 SPS <br>
+Byte 2-3:  0x0064, uint16 100mV threshold <br>
+Byte 4-5:  0x012C, int16 300 number of samples
 
-Mode 2
+![Oscilloscope-Mode](XML/oscilloscope-mode.png?raw=true "Oscilloscope")
 
-![Mode 2](XML/ELehreBoardMode2_dominik.png?raw=true "Mode 2")
+
 
 ## Config <a name="config"></a>
-Byte 0
 
 Bit 7 | Bit 6 | Bit 5 | Bit 4 | Bit 3 | Bit 2 | Bit 1 | Bit 0
 ------|-------|-------|-------|-------|-------|-------|-------
