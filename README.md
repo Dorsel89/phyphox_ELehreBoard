@@ -20,6 +20,10 @@ Byte 1: 0xE0, 860 SPS <br>
 Byte 2-3:  0x0064, uint16 100mV threshold <br>
 Byte 4-5:  0x012C, int16 300 number of samples
 
+
+https://cryptii.com/pipes/integer-encoder <br>
+https://www.rapidtables.com/convert/number/binary-to-hex.html
+
 ![Oscilloscope-Mode](XML/oscilloscope-mode.png?raw=true "Oscilloscope")
 
 
