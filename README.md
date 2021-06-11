@@ -14,7 +14,7 @@ Livemode + Amperemeter feature
 ![Livemode](XML/elehrelivemode.png?raw=true "Livemode")
 
 Oscilloscope-Mode
-![Oscilloscope-Mode](XML/oscilloscope-mode.png.png?raw=true "Oscilloscope")
+![Oscilloscope-Mode](XML/oscilloscope-mode.png?raw=true "Oscilloscope")
 
 HEX Config: 16E00064012C
 byte 0: 0x16, binary 00010110
