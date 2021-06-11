@@ -13,9 +13,17 @@ Livemode + Amperemeter feature
 
 ![Livemode](XML/elehrelivemode.png?raw=true "Livemode")
 
+Oscilloscope-Mode
+![Oscilloscope-Mode](XML/oscilloscope-mode.png.png?raw=true "Oscilloscope")
+
+HEX Config: 16E00064012C
+byte 0: 0x16, binary 00010110
+byte 1: 
 
 ## Config <a name="config"></a>
-Byte 0
+Byte 0: 0xE0, 860 SPS
+Byte 1-2:  0x0064, uint16 100mV threshold
+Byte 3-4:  0x012C, int16 300 number of samples
 
 Bit 7 | Bit 6 | Bit 5 | Bit 4 | Bit 3 | Bit 2 | Bit 1 | Bit 0
 ------|-------|-------|-------|-------|-------|-------|-------
