@@ -17,16 +17,17 @@
 
 bool zeroRuns=true;
 
-bool testMode = false;
-bool CHI =false;
-bool CHII =false;
-bool fastMode = false;
-bool risingEdge = false;
-bool internalADC = false;
+volatile bool testMode = false;
+volatile bool CHI =false;
+volatile bool CHII =false;
+volatile bool fastMode = false;
+volatile bool risingEdge = false;
+volatile bool internalADC = false;
 
 
 
-float threshold =0;
+volatile float threshold =0;
+
 
 DigitalOut myLED(P0_4); //rote led
 //AnalogIn onBoardADC1(P0_4); //rote led
@@ -44,8 +45,9 @@ float R2 =130;
 DigitalIn adcReady(rdy);
 
 uint8_t configData[20];
-
-uint16_t currentDataRate = RATE_ADS1115_64SPS;
+uint8_t osziControlgData[20];
+volatile bool activeTrigger = false;
+volatile uint16_t currentDataRate = RATE_ADS1115_64SPS;
 
 I2C myI2C(sda, scl);
 Adafruit_ADS1115 ads(&myI2C);
@@ -55,7 +57,7 @@ float prevTime = 0;             // Used for writePrev()
 
 // adjustable variables:
 
-uint16_t multipleValuesAmount = 100; // how many values are saved in multiple read functions
+volatile uint16_t multipleValuesAmount = 100; // how many values are saved in multiple read functions
 
 int ledCounter=0;
 LowPowerTicker  powerOnBlink;
@@ -85,6 +87,10 @@ void powerOn() {
 bool getNBit(uint8_t byte, int position){
     return byte & (1<<position);
 }
+void receiveOsziControleData(){
+    PhyphoxBLE::readOszi(&osziControlgData[0],20);
+    activeTrigger = osziControlgData[0];
+}
 
 /**
     Gets data from PhyPhox app and uses it to switch between modes and inputs
@@ -104,9 +110,8 @@ void receivedData() {           // get data from phyphox app
     internalADC = getNBit(configData[0],5);
     uint16_t targetRate = configData[1];
     ads.setDataRate(targetRate);
-    int16_t thresholdINT = (configData[2] | (configData[3] < 8));
-    threshold = thresholdINT/1000.0;
-    multipleValuesAmount = (configData[5] | (configData[4] < 8));
+    threshold = 0.001* (configData[3] | (configData[2] << 8));
+    multipleValuesAmount = (configData[5] | (configData[4] << 8));
   }
 
 }
@@ -151,13 +156,13 @@ void measureVoltageADS1115(float *readValue) {
 */
 
 void waitAndReadMult(float *value) {
-
+   
   float multVal[multipleValuesAmount];
   float multValTime[multipleValuesAmount];
   float result[2];
 
   if(CHI){//CHannel 1-2
-      ads.con_diffEnded(1); 
+      ads.con_diffEnded(1);
   }else {//channel 2-3
       ads.con_diffEnded(0);     
   }
@@ -168,9 +173,12 @@ bool triggerFired = false;
 float voltagebuffer[2];
 float timeBuffer[2];
 bool firstValue = false;
+
 t.reset();
 t.start();
+
  while (counter<multipleValuesAmount) {
+
 
     if(adcReady==0 && !triggerFired && counter < 2){
         float voltage = calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
@@ -178,13 +186,14 @@ t.start();
             voltagebuffer[0]=voltage;
             timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();        
             firstValue=true;
+            
             continue;
         }else if(firstValue && !triggerFired){
             voltagebuffer[1] = voltagebuffer[0];
-            voltagebuffer[0] = voltage;
             timeBuffer[1]=timeBuffer[0];
-            timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
 
+            voltagebuffer[0] = voltage;
+            timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
         }
         if(risingEdge && voltagebuffer[0]>threshold && voltagebuffer[1]<threshold){
             triggerFired = true;
@@ -193,6 +202,7 @@ t.start();
             multVal[1]=voltagebuffer[0];
             multValTime[1] = timeBuffer[0];
             multValTime[0] = timeBuffer[1];
+            
         }else if (!risingEdge && voltagebuffer[0]<threshold && voltagebuffer[1]>threshold) {
             triggerFired = true;
             counter=2;
@@ -204,20 +214,21 @@ t.start();
     }
 
     if(adcReady==0 && triggerFired){
+        
         multVal[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
         multValTime[counter]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();    
         counter++;
     }
 }
 t.stop();
+
 for (int i=0; i<multipleValuesAmount; i++) {
     result[0]  =multVal[i];
-    result[1]  =multValTime[i]-multValTime[0];
+    result[1]  =0.001*(multValTime[i]-multValTime[0]);
     PhyphoxBLE::write(result[0],result[1]);
     ThisThread::sleep_for(20ms);
 }
 
- ThisThread::sleep_for(10s);
 }
 
 
@@ -330,13 +341,17 @@ int main() {
     t.start();
   
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
-  //multipleValuesAmount=100;
+  PhyphoxBLE::OsziHandler = &receiveOsziControleData;   // used to receive data from PhyPhox.
+  
 
-  powerOnBlink.attach(&powerOn,100ms);
+  //powerOnBlink.attach(&powerOn,100ms);
 
 while (true) {                            // start loop.
     //ThisThread::sleep_for(100ms);
-    
+
+    myLED = !activeTrigger;
+
+
     if(PhyphoxBLE::activeConnections>0){
         
         if(testMode){
@@ -352,9 +367,12 @@ while (true) {                            // start loop.
         }else if(!testMode) {
             //MEASUREMENT MODE
             
-            if(fastMode){
+            if(fastMode && activeTrigger){
                 //FASTMODE
+                myLED = 0;
+                activeTrigger = false;
                 waitAndReadMult(value);                
+                myLED=1;
             }else if(!fastMode) {
                 //LIVE MODE
                 if(!internalADC){
