@@ -4,6 +4,7 @@
 #include "power_save.h"
 #include <chrono>
 #include <cstdint>
+#include "flashUtility.h"
 
 #define TESTMODUS_GND 1
 #define TESTMODUS_P12 2
@@ -24,6 +25,7 @@ volatile bool fastMode = false;
 volatile bool risingEdge = false;
 volatile bool internalADC = false;
 
+float GROUNDOFFSET[2] = {0};// = 0.025187502;
 
 
 volatile float threshold =0;
@@ -62,6 +64,8 @@ volatile uint16_t multipleValuesAmount = 100; // how many values are saved in mu
 int ledCounter=0;
 LowPowerTicker  powerOnBlink;
 
+uint32_t test = 0x0FE000;
+FLASH myCONFIG(test);
 
 void blinkNtimes(int times){
     for(int i=0;i<times;i++){
@@ -121,8 +125,13 @@ void receivedData() {           // get data from phyphox app
 */
 
 
-float calibrateVoltage(float raw){
-    return (-1*raw*R2/R1 +0.025187502);
+float calibrateVoltage(float raw, int Channel){
+    if(Channel == 1 ){
+        return (-1*raw*R2/R1 + GROUNDOFFSET[0]);
+    }else{
+        return (-1*raw*R2/R1 + GROUNDOFFSET[1]);
+    }
+    
 }
 /*
     Red pins to get voltage value.
@@ -133,14 +142,14 @@ float calibrateVoltage(float raw){
 void measureVoltageADS1115(float *readValue) {
   
   if(CHI){
-    readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1()));
+    readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1()),1);
     readValue[2] = 0.001*duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
    
   }else {
     readValue[0]=0;
   }
   if(CHII){
-    readValue[1] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_2_3()));                                  // store value.
+    readValue[1] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_2_3()),2);                                  // store value.
     readValue[3]= 0.001*duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
   }else {
     readValue[1]=0;
@@ -160,11 +169,13 @@ void waitAndReadMult(float *value) {
   float multVal[multipleValuesAmount];
   float multValTime[multipleValuesAmount];
   float result[2];
-
+  int channeloffset =1;
   if(CHI){//CHannel 1-2
       ads.con_diffEnded(1);
+      channeloffset =1;
   }else {//channel 2-3
       ads.con_diffEnded(0);     
+      channeloffset=2;
   }
   
 
@@ -181,7 +192,7 @@ t.start();
 
 
     if(adcReady==0 && !triggerFired && counter < 2){
-        float voltage = calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
+        float voltage = calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()),channeloffset);
         if(!firstValue){
             voltagebuffer[0]=voltage;
             timeBuffer[0]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();        
@@ -215,7 +226,7 @@ t.start();
 
     if(adcReady==0 && triggerFired){
         
-        multVal[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()));
+        multVal[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()),channeloffset);
         multValTime[counter]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();    
         counter++;
     }
@@ -244,6 +255,8 @@ void runTESTMODE(){
     int delayMS = 0;
     // GROUND TEST
     bool GND=0;
+    GROUNDOFFSET[2]={0};
+    float groundOffset[2]={0};
     while (testMode && configData[1]==0) {
         ThisThread::sleep_for(100ms);
     }
@@ -254,11 +267,14 @@ void runTESTMODE(){
             ThisThread::sleep_for(1s);
             for(int i=0;i<nGND;i++){
                 measureVoltageADS1115(buf);
-                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
+                PhyphoxBLE::write(buf[0],buf[1],buf[2]);
+                groundOffset[0]+= buf[0]*1.0/nGND;
+                groundOffset[1]+= buf[1]*1.0/nGND;         
                 ThisThread::sleep_for(delayMS*1ms);
             }
             GND=true;
         }
+        //STORE ON FLASH
         ThisThread::sleep_for(100ms);
     }
     
@@ -330,7 +346,7 @@ int main() {
   myLED=1; //turn led off
   float value[4];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
-
+  myCONFIG.readELehreConfig(&GROUNDOFFSET[0]);
 
   ads.setGain(GAIN_TWO);
   ads.setDataRate(currentDataRate);
@@ -343,7 +359,6 @@ int main() {
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
   PhyphoxBLE::OsziHandler = &receiveOsziControleData;   // used to receive data from PhyPhox.
   
-
   //powerOnBlink.attach(&powerOn,100ms);
 
 while (true) {                            // start loop.
