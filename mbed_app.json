@@ -13,6 +13,9 @@
             "macro_name": "MBED_CONF_NORDIC_LF_CLOCK_XTAL_ACCURACY"
         }
     },
+    "macros": [
+        "MBED_CONF_APP_MAIN_STACK_SIZE=6000"
+    ],
     "target_overrides": {
         "*": {
             "target.lf_clock_src": "NRF_LF_SRC_RC",

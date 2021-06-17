@@ -11,10 +11,10 @@ class FLASH{
         
         void eraseFlash();
         void flashInit();
-        void writeELehreConfig(float channelOffsets[2]); 
-        void readELehreConfig(float* GROUNDOFFSETS);
+        int8_t writeELehreConfig(float* GROUNDOFFSETS); 
+        int8_t readELehreConfig(float* GROUNDOFFSETS);
         FlashIAP flash;
-        uint8_t status;
+        int8_t status;
 
     private:
         uint32_t    flash_start;

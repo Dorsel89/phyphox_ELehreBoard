@@ -4,6 +4,7 @@
 #include "power_save.h"
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include "flashUtility.h"
 
 #define TESTMODUS_GND 1
@@ -25,7 +26,7 @@ volatile bool fastMode = false;
 volatile bool risingEdge = false;
 volatile bool internalADC = false;
 
-float GROUNDOFFSET[2] = {0};// = 0.025187502;
+volatile float GROUNDOFFSET[2] = {0};// = 0.025187502;
 
 
 volatile float threshold =0;
@@ -164,10 +165,10 @@ void measureVoltageADS1115(float *readValue) {
     @param prevAmount the max amount of values which should be saved before the voltage change triggers.
 */
 
-void waitAndReadMult(float *value) {
+void waitAndReadMult(float* _voltage, float* _timestamp) {
    
-  float multVal[multipleValuesAmount];
-  float multValTime[multipleValuesAmount];
+  //float multVal[multipleValuesAmount];
+  //float multValTime[multipleValuesAmount];
   float result[2];
   int channeloffset =1;
   if(CHI){//CHannel 1-2
@@ -209,36 +210,35 @@ t.start();
         if(risingEdge && voltagebuffer[0]>threshold && voltagebuffer[1]<threshold){
             triggerFired = true;
             counter=2;
-            multVal[0]=voltagebuffer[1];
-            multVal[1]=voltagebuffer[0];
-            multValTime[1] = timeBuffer[0];
-            multValTime[0] = timeBuffer[1];
+            _voltage[0]=voltagebuffer[1];
+            _voltage[1]=voltagebuffer[0];
+            _timestamp[1] = timeBuffer[0];
+            _timestamp[0] = timeBuffer[1];
             
         }else if (!risingEdge && voltagebuffer[0]<threshold && voltagebuffer[1]>threshold) {
             triggerFired = true;
             counter=2;
-            multVal[0]=voltagebuffer[1];
-            multVal[1]=voltagebuffer[0];
-            multValTime[1] = timeBuffer[0];
-            multValTime[0] = timeBuffer[1];
+            _voltage[0]=voltagebuffer[1];
+            _voltage[1]=voltagebuffer[0];
+            _timestamp[1] = timeBuffer[0];
+            _timestamp[0] = timeBuffer[1];
         }
     }
 
     if(adcReady==0 && triggerFired){
         
-        multVal[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()),channeloffset);
-        multValTime[counter]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();    
+        _voltage[counter]=calibrateVoltage(ads.computeVolts(ads.getLastConversionResults()),channeloffset);
+        _timestamp[counter]=duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();    
         counter++;
     }
 }
 t.stop();
-
-for (int i=0; i<multipleValuesAmount; i++) {
-    result[0]  =multVal[i];
-    result[1]  =0.001*(multValTime[i]-multValTime[0]);
-    PhyphoxBLE::write(result[0],result[1]);
-    ThisThread::sleep_for(20ms);
-}
+    float offset = _timestamp[0];
+    for (int i=0; i<multipleValuesAmount; i++) {
+        _timestamp[i]  =0.001*(_timestamp[i]-offset);
+    }
+    
+    
 
 }
 
@@ -255,8 +255,11 @@ void runTESTMODE(){
     int delayMS = 0;
     // GROUND TEST
     bool GND=0;
-    GROUNDOFFSET[2]={0};
-    float groundOffset[2]={0};
+
+    
+    float groundOffsetBuffer[2]={0};
+    GROUNDOFFSET[0]=0;
+    GROUNDOFFSET[1]=0;
     while (testMode && configData[1]==0) {
         ThisThread::sleep_for(100ms);
     }
@@ -268,16 +271,21 @@ void runTESTMODE(){
             for(int i=0;i<nGND;i++){
                 measureVoltageADS1115(buf);
                 PhyphoxBLE::write(buf[0],buf[1],buf[2]);
-                groundOffset[0]+= buf[0]*1.0/nGND;
-                groundOffset[1]+= buf[1]*1.0/nGND;         
+                groundOffsetBuffer[0]+= buf[0]*-1.0/nGND;
+                groundOffsetBuffer[1]+= buf[1]*-1.0/nGND;         
                 ThisThread::sleep_for(delayMS*1ms);
             }
             GND=true;
         }
         //STORE ON FLASH
+        
         ThisThread::sleep_for(100ms);
     }
     
+    GROUNDOFFSET[0]=groundOffsetBuffer[0];
+    GROUNDOFFSET[1]=groundOffsetBuffer[1];
+    
+    myCONFIG.writeELehreConfig(groundOffsetBuffer);
     // +12V TEST    ###################################################
     
     bool P12 = false;
@@ -316,8 +324,12 @@ void runTESTMODE(){
 
     // SIN TEST ###################################################
     bool sinus = false;
+    
     while(testMode && configData[1]==4){
         nSIN = configData[2];
+        //risingEdge = true;
+        //multipleValuesAmount = nSin;
+        //threshold = 0.5; //0.5V
         if(!sinus){
             ThisThread::sleep_for(1s);
             for(int i=0;i<nSIN;i++){
@@ -330,24 +342,36 @@ void runTESTMODE(){
         ThisThread::sleep_for(100ms);
     }
     ThisThread::sleep_for(100ms);
-
+  
 
     //measureVoltageADS1115(buf);
     //write(buf);
 
 }
-
+void initOffset(){
+    float arrayBufF[2] = {0};
+    int8_t error=0;
+    error = myCONFIG.readELehreConfig(arrayBufF);
+    if(arrayBufF[0]<0.5 && arrayBufF[0]>-0.5){
+        GROUNDOFFSET[0] = arrayBufF[0];
+    }
+    if(arrayBufF[1]<0.5 && arrayBufF[1]>-0.5){
+        GROUNDOFFSET[1] = arrayBufF[1];
+    }
+}
 /**
     Initialization and loop which uses a switch case to either behave for mode 1
     or mode 2.
 */
 int main() {
+
+    myLED=1; //turn led off
+    initOffset();
   //power_save();
-  myLED=1; //turn led off
+  
   float value[4];                           // the array where the values should be stored in.
   PhyphoxBLE::start("elehre");              // start BLE
-  myCONFIG.readELehreConfig(&GROUNDOFFSET[0]);
-
+  
   ads.setGain(GAIN_TWO);
   ads.setDataRate(currentDataRate);
   ThisThread::sleep_for(500ms);
@@ -364,7 +388,7 @@ int main() {
 while (true) {                            // start loop.
     //ThisThread::sleep_for(100ms);
 
-    myLED = !activeTrigger;
+    //myLED = !activeTrigger;
 
 
     if(PhyphoxBLE::activeConnections>0){
@@ -377,6 +401,7 @@ while (true) {                            // start loop.
                 CHI=1;
                 CHII=1;
                 runTESTMODE();
+
                 
             }
         }else if(!testMode) {
@@ -386,7 +411,16 @@ while (true) {                            // start loop.
                 //FASTMODE
                 myLED = 0;
                 activeTrigger = false;
-                waitAndReadMult(value);                
+                float voltage[multipleValuesAmount];
+                float timestamp[multipleValuesAmount];
+                
+                waitAndReadMult(voltage,timestamp);
+                                
+                for(int i=0;i<multipleValuesAmount;i++){
+                    PhyphoxBLE::write(voltage[i],timestamp[i]);
+                    ThisThread::sleep_for(20ms);
+                }
+        
                 myLED=1;
             }else if(!fastMode) {
                 //LIVE MODE
@@ -403,5 +437,6 @@ while (true) {                            // start loop.
     }
     
   }
+  
 }
 

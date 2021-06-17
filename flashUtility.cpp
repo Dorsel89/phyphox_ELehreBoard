@@ -16,22 +16,25 @@ FLASH::FLASH(uint32_t _startAddress){
 }
 
 void FLASH::eraseFlash(){
-    flash.erase(startAddress, sector_size);
+    flash.erase(startAddress, 4*1024);
 }
 
-void FLASH::writeELehreConfig(float channelOffsets[2]){
+int8_t FLASH::writeELehreConfig(float* f){
     flash.init();
-    addr = startAddress;
-    uint8_t dataBuffer[8];
-    memcpy(&dataBuffer[0],&channelOffsets[0],8);
-    status = flash.program(dataBuffer, addr, 8);
+    flash.erase(startAddress, 4*1024);
+    //int8_t dataBuffer[4*2] = {0};
+    memcpy(&page_buffer[0],&f[0],8);
+    status = flash.program(page_buffer, startAddress, 8);
+    //ThisThread::sleep_for(10ms);
     flash.deinit();
+    return status;
 }
 
-void FLASH::readELehreConfig(float* GROUNDOFFSET){
+int8_t FLASH::readELehreConfig(float* f){
     flash.init();
     uint8_t bytebuffer[8]={0};
-    status = flash.read(bytebuffer, addr, 8);
+    status = flash.read(bytebuffer, startAddress, 8);
+    memcpy(&f[0], &bytebuffer[0], 8);
     flash.deinit();
-    memcpy(GROUNDOFFSET[0], &bytebuffer[0], 8);
+    return status;
 }
