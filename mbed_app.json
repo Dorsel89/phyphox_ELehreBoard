@@ -1,0 +1,29 @@
+{
+    "config": {
+        "lf_clock_rc_calib_timer_interval": {
+        "value": 16,
+        "macro_name": "MBED_CONF_NORDIC_NRF_LF_CLOCK_CALIB_TIMER_INTERVAL"
+        },
+        "lf_clock_rc_calib_mode_config": {
+            "value": 0,
+            "macro_name": "MBED_CONF_NORDIC_NRF_LF_CLOCK_CALIB_MODE_CONFIG"
+        },
+        "lf_clock_xtal_accuracy": {
+            "value": "NRF_CLOCK_LF_XTAL_ACCURACY_500_PPM",
+            "macro_name": "MBED_CONF_NORDIC_LF_CLOCK_XTAL_ACCURACY"
+        }
+    },
+    "macros": [
+        "MBED_CONF_APP_MAIN_STACK_SIZE=6000"
+    ],
+    "target_overrides": {
+        "*": {
+            "target.lf_clock_src": "NRF_LF_SRC_RC",
+            "lf_clock_xtal_accuracy": "NRF_CLOCK_LF_XTAL_ACCURACY_500_PPM",
+            "target.components_add": ["FLASHIAP", "STORAGE"],
+            "target.device_has": ["FLASH"],
+            "storage.storage_type": "TDB_INTERNAL",
+            "target.restrict_size": "0x0FE000"
+        }
+    }
+}
