@@ -19,7 +19,7 @@
 
 bool zeroRuns=true;
 
-volatile bool testMode = false;
+volatile bool writeOffsets = false;
 volatile bool CHI =false;
 volatile bool CHII =false;
 volatile bool fastMode = false;
@@ -28,7 +28,7 @@ volatile bool internalADC = false;
 
 volatile float GROUNDOFFSET[2] = {0};// = 0.025187502;
 
-
+volatile bool SLEEP = true;
 volatile float threshold =0;
 
 
@@ -65,8 +65,13 @@ volatile uint16_t multipleValuesAmount = 100; // how many values are saved in mu
 int ledCounter=0;
 LowPowerTicker  powerOnBlink;
 
-uint32_t test = 0x0FE000;
-FLASH myCONFIG(test);
+uint32_t flashAddress = 0x0FE000;
+FLASH myCONFIG(flashAddress);
+
+union {
+  float f;
+  uint8_t b[4];
+} u;
 
 void blinkNtimes(int times){
     for(int i=0;i<times;i++){
@@ -101,13 +106,34 @@ void receiveOsziControleData(){
     Gets data from PhyPhox app and uses it to switch between modes and inputs
 */
 void receivedData() {           // get data from phyphox app
+  
   PhyphoxBLE::read(&configData[0],20);
-  t.reset();
-  testMode = getNBit(configData[0],0);  //false
-  if(testMode){
-    CHI=1;
-    CHII=1;
+    writeOffsets = getNBit(configData[0],0);  //false
+  if(writeOffsets){
+
+    u.b[0] = configData[1];
+    u.b[1] = configData[2];
+    u.b[2] = configData[3];
+    u.b[3] = configData[4];
+    GROUNDOFFSET[0] = -1.0*u.f;
+    u.b[0] = configData[5];
+    u.b[1] = configData[6];
+    u.b[2] = configData[7];
+    u.b[3] = configData[8];
+    GROUNDOFFSET[1] =-1.0* u.f;
+    if(getNBit(configData[0],1)){
+       float floats[2];
+       floats[0]=GROUNDOFFSET[0];
+       floats[1]=GROUNDOFFSET[1];
+       myCONFIG.writeELehreConfig(floats); 
+    } 
+    
   }else {
+    SLEEP=false;
+    t.stop();
+    t.reset();
+    t.start();
+    
     fastMode = getNBit(configData[0],1);
     CHI = getNBit(configData[0],2);
     CHII = getNBit(configData[0],3);
@@ -145,7 +171,7 @@ void measureVoltageADS1115(float *readValue) {
   if(CHI){
     readValue[0] = calibrateVoltage(ads.computeVolts(ads.readADC_Differential_0_1()),1);
     readValue[2] = 0.001*duration_cast<std::chrono::milliseconds>(t.elapsed_time()).count();
-   
+
   }else {
     readValue[0]=0;
   }
@@ -242,112 +268,6 @@ t.stop();
 
 }
 
-
-//###################################################
-void runTESTMODE(){
-
-    int nGND;
-    int nP12;
-    int nN12;
-    int nSIN;
-    
-    float buf[3];
-    int delayMS = 0;
-    // GROUND TEST
-    bool GND=0;
-
-    
-    float groundOffsetBuffer[2]={0};
-    GROUNDOFFSET[0]=0;
-    GROUNDOFFSET[1]=0;
-    while (testMode && configData[1]==0) {
-        ThisThread::sleep_for(100ms);
-    }
-    
-    while(testMode && configData[1]==1){
-        nGND = configData[2];
-        if(!GND){
-            ThisThread::sleep_for(1s);
-            for(int i=0;i<nGND;i++){
-                measureVoltageADS1115(buf);
-                PhyphoxBLE::write(buf[0],buf[1],buf[2]);
-                groundOffsetBuffer[0]+= buf[0]*-1.0/nGND;
-                groundOffsetBuffer[1]+= buf[1]*-1.0/nGND;         
-                ThisThread::sleep_for(delayMS*1ms);
-            }
-            GND=true;
-        }
-        //STORE ON FLASH
-        
-        ThisThread::sleep_for(100ms);
-    }
-    
-    GROUNDOFFSET[0]=groundOffsetBuffer[0];
-    GROUNDOFFSET[1]=groundOffsetBuffer[1];
-    
-    myCONFIG.writeELehreConfig(groundOffsetBuffer);
-    // +12V TEST    ###################################################
-    
-    bool P12 = false;
-    while(testMode && configData[1]==2){
-        nP12 = configData[2];
-        if(!P12){
-            ThisThread::sleep_for(1s);
-            for(int i=0;i<nP12;i++){
-                measureVoltageADS1115(buf);
-                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
-                ThisThread::sleep_for(delayMS*1ms);
-            }
-            P12=true;
-            
-        }  
-        ThisThread::sleep_for(100ms);
-    }
-    
-
-    // -12V TEST    ###################################################
-    bool N12 = false;
-    while(testMode && configData[1]==3){
-        nN12 = configData[2];
-        if(!N12){
-            ThisThread::sleep_for(1s);
-            for(int i=0;i<nN12;i++){
-                measureVoltageADS1115(buf);
-                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
-                ThisThread::sleep_for(delayMS*1ms);            
-            }
-            N12=true;
-        }
-        ThisThread::sleep_for(100ms);
-    }
-    
-
-    // SIN TEST ###################################################
-    bool sinus = false;
-    
-    while(testMode && configData[1]==4){
-        nSIN = configData[2];
-        //risingEdge = true;
-        //multipleValuesAmount = nSin;
-        //threshold = 0.5; //0.5V
-        if(!sinus){
-            ThisThread::sleep_for(1s);
-            for(int i=0;i<nSIN;i++){
-                measureVoltageADS1115(buf);
-                PhyphoxBLE::write(buf[0],buf[1],buf[2]);          
-                ThisThread::sleep_for(delayMS*1ms);
-            }
-            sinus=true;
-        }
-        ThisThread::sleep_for(100ms);
-    }
-    ThisThread::sleep_for(100ms);
-  
-
-    //measureVoltageADS1115(buf);
-    //write(buf);
-
-}
 void initOffset(){
     float arrayBufF[2] = {0};
     int8_t error=0;
@@ -370,16 +290,16 @@ int main() {
   //power_save();
   
   float value[4];                           // the array where the values should be stored in.
-  PhyphoxBLE::start("elehre");              // start BLE
   
   ads.setGain(GAIN_TWO);
   ads.setDataRate(currentDataRate);
-  ThisThread::sleep_for(500ms);
+  
 
-    
+    ThisThread::sleep_for(100ms);
     t.reset();
     t.start();
-  
+    ThisThread::sleep_for(100ms);
+  PhyphoxBLE::start("elehre");              // start BLE
   PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
   PhyphoxBLE::OsziHandler = &receiveOsziControleData;   // used to receive data from PhyPhox.
   
@@ -393,18 +313,9 @@ while (true) {                            // start loop.
 
     if(PhyphoxBLE::activeConnections>0){
         
-        if(testMode){
-            //TESTMODE
-            //myLED=1;
-            if(zeroRuns==true){
-                zeroRuns=false;
-                CHI=1;
-                CHII=1;
-                runTESTMODE();
-
-                
-            }
-        }else if(!testMode) {
+        if(SLEEP){
+            ThisThread::sleep_for(10ms);
+        }else{
             //MEASUREMENT MODE
             
             if(fastMode && activeTrigger){
@@ -417,8 +328,16 @@ while (true) {                            // start loop.
                 waitAndReadMult(voltage,timestamp);
                                 
                 for(int i=0;i<multipleValuesAmount;i++){
-                    PhyphoxBLE::write(voltage[i],timestamp[i]);
+                    float zero = 0.0;
+                    if(CHI){
+                        
+                        PhyphoxBLE::write(voltage[i],zero,timestamp[i],zero);
+                    }else {
+                        PhyphoxBLE::write(zero,voltage[i],zero,timestamp[i]);
+                    }
+
                     ThisThread::sleep_for(20ms);
+                    
                 }
         
                 myLED=1;
@@ -429,11 +348,11 @@ while (true) {                            // start loop.
                 }
                 PhyphoxBLE::write(value[0],value[1],value[2],value[3]);                 
             }
-            
+
         }
     }
     else {
-        ThisThread::sleep_for(100ms);
+        ThisThread::sleep_for(50ms);
     }
     
   }
