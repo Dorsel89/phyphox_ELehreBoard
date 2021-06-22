@@ -4,7 +4,7 @@
 2. [Configuration](#config)
    * [Measure-Mode](#Measure-Mode)
    * [Oscilloscope-Mode](#Oscilloscope)
-   * [Test-Mode](#Test-Mode) 
+   * [Config-Mode](#Config-Mode)
 3. [Specifications](#Specification)
 4. [Test-Results](#Test-Results)
 
@@ -33,7 +33,7 @@ https://www.rapidtables.com/convert/number/binary-to-hex.html
 Bit 7 | Bit 6 | Bit 5 | Bit 4 | Bit 3 | Bit 2 | Bit 1 | Bit 0
 ------|-------|-------|-------|-------|-------|-------|-------
 | | | | 0: Threshold falling edge | 0: Disable CH II| 0: Disable CH I|  0: Live-Mode | 0: Measure-Mode
-| | | | 1: Threshold rising edge | 1: Enable CH II| 1: Enable CH I | 1: Oscilloscope-Mode| 1: Test-Mode
+| | | | 1: Threshold rising edge | 1: Enable CH II| 1: Enable CH I | 1: Oscilloscope-Mode| 1: ConfigMode
 
 
 ### Measure-Mode *(Byte 0, Bit 0 = 0)* <a name="Measure-Mode"></a>
@@ -58,11 +58,13 @@ Byte 2 - Byte 3 <br>
 Byte 4 - Byte 5
 *uint16_t*
 
-### Test-Mode *(Byte 0, Bit 0 = 1)* <a name="Test-Mode"></a>
+### Config-Mode *(Byte 0, Bit 0 = 1)* <a name="Config-Mode"></a>
+Byte 0: <br>
+if bit 1 is 1, the config values will be stored on flash <br>
 Byte 1: <br>
-*uint8_t* number of active test cycle
+*float* ground offset of ChI in Volt <br>
 Byte 2: <br>
-*uint8_t* number of required data points
+*float* ground offset of ChII in Volt <br>
 
 ## Specifications <a name="Specification"></a>
 * Sensors
