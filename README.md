@@ -65,6 +65,9 @@ Byte 2: <br>
 *uint8_t* number of required data points
 
 ## Specifications <a name="Specification"></a>
+* Sensors
+* * ADS1115 16bit 
+* * NRF52840 internal ADC 8-12bit (up to 200kHz sampling rate)
 * Voltage range: ±12V
 * Least significant bit: 0.37mV
 * Input resistance 1MΩ
