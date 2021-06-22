@@ -10,6 +10,7 @@ float targetGND = 0;
 float targetP12 = 12;
 float targetN12 = -12;
 
+int16_t threshold = 200;//200mV
 
 File root;
 int storedDataFiles = 0;
@@ -31,10 +32,10 @@ bool printData = true;
 
 uint8_t configData[20] = {0};
 
-const int nGND = 50;
-const int nP12 = 50;
-const int nN12 = 50;
-const int nSIN = 50;
+const int nGND = 100;
+const int nP12 = 100;
+const int nN12 = 100;
+const int nSIN = 400;
 
 int volatile dataPointsRequired =0;
 const int numberOfSamples = nGND + nP12 + nN12 + nSIN;
@@ -128,6 +129,11 @@ static void notifyCallback(
 class MyClientCallback : public BLEClientCallbacks {
     void onConnect(BLEClient* pclient) {
       currentMode = 0;
+      GROUND_MODE_INITIALIZED = false;
+      P12_MODE_INITIALIZED = false;
+      N12_MODE_INITIALIZED = false;
+      SIN_CHI_MODE_INITIALIZED = false;
+      SIN_CHII_MODE_INITIALIZED = false;
     }
 
     void onDisconnect(BLEClient* pclient) {
@@ -337,8 +343,9 @@ void loop() {
           allDataPoint = 0;
           GROUND_MODE_INITIALIZED=true;
           dataPointsRequired = nGND;
+          
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && GROUND_MODE_INITIALIZED){
             measuring=false;
             modeDataPoint=0;
             float myMedian[2]={0};
@@ -349,7 +356,7 @@ void loop() {
             configData[0]=3;
             memcpy(&configData[1],&myMedian[0],8);
             configCharacteristic->writeValue(&configData[0], 20);
-            currentMode++;
+            currentMode=2;
             }
           }
       }else if(currentMode==2){
@@ -370,15 +377,16 @@ void loop() {
           modeDataPoint = 0;
           P12_MODE_INITIALIZED=true;
           dataPointsRequired = nP12;
+          return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && P12_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
             doSomeStatistics(nP12,myMedian, myVarianz);
             checkLimits(myMedian, myVarianz);
             saveData();
-            currentMode++;
+            currentMode=3;
             
            }
         }
@@ -400,31 +408,34 @@ void loop() {
           modeDataPoint = 0;
           N12_MODE_INITIALIZED=true;
           dataPointsRequired = nN12;
-          
+          return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && N12_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
             doSomeStatistics(nN12,myMedian, myVarianz);
             checkLimits(myMedian, myVarianz);
             saveData();
-            currentMode++;
+            currentMode=4;
+            return;
            }
         }
     }else if(currentMode == 4){
       if(!SIN_CHI_MODE_INITIALIZED){
         uint8_t buf[2]={0};
         int test[1] = {nSIN};
+        int16_t intBuf[1]={threshold};
+        uint8_t buf2[2]={0};
         memcpy(&buf[0],&test[0],2);
-
+        memcpy(&buf2[0],&intBuf[0],2);
         configData[0] = 0b00010110; //ch1, rising edge
         configData[1] = 0xE0;       //860 SPS
-        configData[2] = 0x01;       //500mV threshold
-        configData[3] = 0xF4;
+        configData[2] = buf[1];//0x01;       //500mV threshold
+        configData[3] = buf[0];//0xF4;
         configData[4] = buf[1];    
         configData[5] = buf[0];
-        
+        delay(5);
         configCharacteristic->writeValue(&configData[0], 20);
         float _V1[nSIN]={0};
         //float _V2[nSIN]={0};
@@ -438,18 +449,20 @@ void loop() {
         disableAllRelais();
         digitalWrite(26,0);
         delay(100); 
-        measuring = true;
         modeDataPoint = 0;
-        SIN_CHI_MODE_INITIALIZED=true;
+        measuring = true;
         dataPointsRequired = nSIN;  
         uint8_t controleData[20];
         controleData[0]=1;
         controleCharacteristic->writeValue(&controleData[0], 20);
+        SIN_CHI_MODE_INITIALIZED=true;
+        return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && SIN_CHI_MODE_INITIALIZED){
             measuring=false;
             saveData();
-            currentMode++;
+            currentMode=5;
+            return;
            }
         }
     }else if(currentMode == 5){
@@ -481,9 +494,10 @@ void loop() {
         dataPointsRequired = nSIN;  
         uint8_t controleData[20];
         controleData[0]=1;
-        controleCharacteristic->writeValue(&controleData[0], 20);      
+        controleCharacteristic->writeValue(&controleData[0], 20); 
+        return;     
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && SIN_CHII_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
@@ -501,6 +515,7 @@ void loop() {
             Serial.print("Sin: ");
             printResult(1);
             currentMode+=1;
+            return;
            }
         }
     }        
