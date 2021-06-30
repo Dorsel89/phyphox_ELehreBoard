@@ -340,10 +340,15 @@ void loop() {
             checkLimits(myMedian, myVarianz);
             saveData();
             configData[0]=3;
+<<<<<<< HEAD
             
             memcpy(&configData[1],&SERIALNUMBER[0],2);
             memcpy(&configData[1]+2,&myMedian[0],8);
             pHWRemoteCharacteristic->writeValue(&configData[0], 11);
+=======
+            memcpy(&configData[1],&myMedian[0],8);
+            configCharacteristic->writeValue(&configData[0], 20);
+>>>>>>> fb849e6e094e64cf15471657d837eb658d808af8
             currentMode=2;
             }
           }
@@ -652,6 +657,7 @@ void saveData(){
   }
   root.close(); 
 }
+<<<<<<< HEAD
 String split(String data, char separator, int index)
 {
     int found = 0;
@@ -719,3 +725,5 @@ void getSN(){
 
     
 }
+=======
+>>>>>>> fb849e6e094e64cf15471657d837eb658d808af8
