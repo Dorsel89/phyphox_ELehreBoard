@@ -12,6 +12,9 @@ static const char *phyphoxBleOsziCharacteristicUUID = "cddf1004-30f7-4671-8b43-5
 
 static const char *phyphoxBleConfigCharacteristicUUID = "cddf1003-30f7-4671-8b43-5e40ba53514a";
 
+static const char *phyphoxBleHWConfigServiceUUID = "cddf9001-30f7-4671-8b43-5e40ba53514a";
+static const char *phyphoxBleHWConfigCharacteristicUUID = "cddf9002-30f7-4671-8b43-5e40ba53514a";
+
 
 #ifndef CONFIGSIZE
 #define CONFIGSIZE 20

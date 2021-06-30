@@ -4,37 +4,44 @@
 float limitGND = 0.050;//+-50mV
 float limitP12 = 0.10;//+-100mV
 float limitN12 = 0.10;//+-100mV
-float limitSTD = 0.010;//std +- 10mV
+float limitSTD = 0.030;//
 
 float targetGND = 0;
-float targetP12 = 12;
-float targetN12 = -12;
+float targetP12 = 11.6;
+float targetN12 = -11.7;
 
+int16_t threshold = 200;//200mV
 
 File root;
 int storedDataFiles = 0;
 int LED_Pin = 2;
 
 String Address = "";
-char* serialNumberString = "";
-char buffer[21];
+char* serialNumberChar = "";
+String SerialNumberString = "";
 
+char buffer[21];
+String DEFAULTDEVICENAME = "E-Lehre E0000";
+uint16_t SERIALNUMBER[1];
 #include "BLEDevice.h"
 // The remote service we wish to connect to.
 static BLEUUID serviceUUID("cddf1001-30f7-4671-8b43-5e40ba53514a");
+static BLEUUID serviceHWUUID("cddf9001-30f7-4671-8b43-5e40ba53514a");
+
 // The characteristic of the remote service we are interested in.
 static BLEUUID    charUUID("cddf1002-30f7-4671-8b43-5e40ba53514a");
 static BLEUUID    configUUID("cddf1003-30f7-4671-8b43-5e40ba53514a");
 static BLEUUID    controleUUID("cddf1004-30f7-4671-8b43-5e40ba53514a");
+static BLEUUID    configHWUUID("cddf9002-30f7-4671-8b43-5e40ba53514a");
 
-bool printData = true;
+bool printData = false;
 
 uint8_t configData[20] = {0};
 
-const int nGND = 50;
-const int nP12 = 50;
-const int nN12 = 50;
-const int nSIN = 50;
+const int nGND = 100;
+const int nP12 = 100;
+const int nN12 = 100;
+const int nSIN = 400;
 
 int volatile dataPointsRequired =0;
 const int numberOfSamples = nGND + nP12 + nN12 + nSIN;
@@ -43,7 +50,7 @@ float* V2_Pointer = NULL;
 float* Timestamps1_Pointer = NULL;
 float* Timestamps2_Pointer = NULL;
 
-bool deviceWorks[4] = {false};
+uint8_t deviceWorks = 0;
 
 
 
@@ -65,8 +72,11 @@ static boolean doScan = true;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLERemoteCharacteristic* configCharacteristic;
 static BLERemoteCharacteristic* controleCharacteristic;
+static BLERemoteCharacteristic* pHWRemoteCharacteristic;
+
 static BLEAdvertisedDevice* myDevice;
 uint8_t dataReceived[20] = {0};
+volatile bool snOnSDCard = false;
 
 int volatile currentMode = 0;
 #define MODE_GND 1
@@ -116,7 +126,9 @@ static void notifyCallback(
         }
       }                  
       if(printData){
-        Serial.println("");
+        Serial.print("   #");
+        Serial.println(modeDataPoint);
+        //Serial.println("");
       }
       
 
@@ -128,6 +140,11 @@ static void notifyCallback(
 class MyClientCallback : public BLEClientCallbacks {
     void onConnect(BLEClient* pclient) {
       currentMode = 0;
+      GROUND_MODE_INITIALIZED = false;
+      P12_MODE_INITIALIZED = false;
+      N12_MODE_INITIALIZED = false;
+      SIN_CHI_MODE_INITIALIZED = false;
+      SIN_CHII_MODE_INITIALIZED = false;
     }
 
     void onDisconnect(BLEClient* pclient) {
@@ -155,9 +172,11 @@ bool connectToServer() {
 
   // Obtain a reference to the service we are after in the remote BLE server.
   BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
+  BLERemoteService* pHWRemoteService = pClient->getService(serviceHWUUID);
+
   if (pRemoteService == nullptr) {
     Serial.print("Failed to find our service UUID: ");
-    Serial.println(serviceUUID.toString().c_str());
+    Serial.println(serviceHWUUID.toString().c_str());
     pClient->disconnect();
     return false;
   }
@@ -168,7 +187,9 @@ bool connectToServer() {
   pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
   configCharacteristic = pRemoteService->getCharacteristic(configUUID);
   controleCharacteristic = pRemoteService->getCharacteristic(controleUUID);
-  if (pRemoteCharacteristic == nullptr) {
+  pHWRemoteCharacteristic = pHWRemoteService->getCharacteristic(configHWUUID);
+
+  if (pHWRemoteCharacteristic  == nullptr) {
     Serial.print("Failed to find our characteristic UUID: ");
     Serial.println(charUUID.toString().c_str());
     pClient->disconnect();
@@ -193,7 +214,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       //Serial.println(advertisedDevice.toString().c_str());
 
       // We have found a device, let us now see if it contains the service we are looking for.
-      if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+      if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceHWUUID)) {
 
         BLEDevice::getScan()->stop();
         myDevice = new BLEAdvertisedDevice(advertisedDevice);
@@ -267,12 +288,17 @@ void loop() {
   // with the current time since boot.
   if (connected) {
     if(currentMode==0){
-      
+        getSN();
+          
+        uint8_t mySNArray[2];
+        memcpy(&mySNArray[0],&SERIALNUMBER[0],2);
+        //pHWRemoteCharacteristic->writeValue(&mySNArray[0], 2);
         // reset offsets
         float zero[2]={0.0};
-        configData[0]=1;
-        memcpy(&configData[1],&zero[0],8);
-        configCharacteristic->writeValue(&configData[0], 20);
+        configData[0]=3;
+        memcpy(&configData[1],&mySNArray[0],2);
+        memcpy(&configData[1]+1+2,&zero[0],8);
+        pHWRemoteCharacteristic->writeValue(&configData[0], 11);
         delay(100);
         
         //connected to a new device! go into live mode for first measurements
@@ -283,41 +309,7 @@ void loop() {
         GROUND_MODE_INITIALIZED = false;
         P12_MODE_INITIALIZED = false;
         N12_MODE_INITIALIZED = false;
-      
-        if (SD.exists("/elehre/"+Address+".txt")){ 
-            Serial.println(Address+".txt exists.");
-            root = SD.open("/elehre/" + Address + ".txt");
-            char character;
-            char Buffer[50];
-            int bufferposition =0; 
-            char trennzeichen = ';';                       
-            while (root.available() > 0){
-              character = root.read();
-              if(character==trennzeichen){
-                buffer[bufferposition]='\0';
-                serialNumberString=buffer;
-                break;
-                }
-              buffer[bufferposition]=character;
-              bufferposition+=1;
-              }
-            root.close();
-         
-          }else {
-            Serial.println(Address+".txt doesn't exist... creating it..");
-            root = SD.open("/elehre/" + Address + ".txt", FILE_WRITE);
-            root.close();
-            Serial.print("New SN: ");
-            sprintf(buffer, "E%04d", storedDataFiles+1);
-            serialNumberString = buffer;
-          }
-          Serial.print("GIVEN SN: ");
-          Serial.println(serialNumberString);
-          root = SD.open("/elehre/" + Address + ".txt", FILE_WRITE);
-          root.print(serialNumberString); 
-          root.print(";");
-          root.println(Address+";");
-          root.close();
+        
       }else if(currentMode ==1){
         if (!GROUND_MODE_INITIALIZED){
           float _V1[nGND]={0};
@@ -337,8 +329,9 @@ void loop() {
           allDataPoint = 0;
           GROUND_MODE_INITIALIZED=true;
           dataPointsRequired = nGND;
+          
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && GROUND_MODE_INITIALIZED){
             measuring=false;
             modeDataPoint=0;
             float myMedian[2]={0};
@@ -347,9 +340,11 @@ void loop() {
             checkLimits(myMedian, myVarianz);
             saveData();
             configData[0]=3;
-            memcpy(&configData[1],&myMedian[0],8);
-            configCharacteristic->writeValue(&configData[0], 20);
-            currentMode++;
+            
+            memcpy(&configData[1],&SERIALNUMBER[0],2);
+            memcpy(&configData[1]+2,&myMedian[0],8);
+            pHWRemoteCharacteristic->writeValue(&configData[0], 11);
+            currentMode=2;
             }
           }
       }else if(currentMode==2){
@@ -365,20 +360,21 @@ void loop() {
           Serial.println("+12 SIGNALS ON ALL INPUTS");        
           disableAllRelais();
           digitalWrite(33,0); 
-          delay(100);
+          delay(1000);
           measuring = true;
           modeDataPoint = 0;
           P12_MODE_INITIALIZED=true;
           dataPointsRequired = nP12;
+          return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && P12_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
             doSomeStatistics(nP12,myMedian, myVarianz);
             checkLimits(myMedian, myVarianz);
             saveData();
-            currentMode++;
+            currentMode=3;
             
            }
         }
@@ -395,36 +391,39 @@ void loop() {
           Serial.println("-12 SIGNALS ON ALL INPUTS");        
           disableAllRelais();
           digitalWrite(25,0); 
-          delay(100);
+          delay(1000);
           measuring = true;
           modeDataPoint = 0;
           N12_MODE_INITIALIZED=true;
           dataPointsRequired = nN12;
-          
+          return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && N12_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
             doSomeStatistics(nN12,myMedian, myVarianz);
             checkLimits(myMedian, myVarianz);
             saveData();
-            currentMode++;
+            currentMode=4;
+            return;
            }
         }
     }else if(currentMode == 4){
       if(!SIN_CHI_MODE_INITIALIZED){
         uint8_t buf[2]={0};
         int test[1] = {nSIN};
+        int16_t intBuf[1]={threshold};
+        uint8_t buf2[2]={0};
         memcpy(&buf[0],&test[0],2);
-
+        memcpy(&buf2[0],&intBuf[0],2);
         configData[0] = 0b00010110; //ch1, rising edge
         configData[1] = 0xE0;       //860 SPS
-        configData[2] = 0x01;       //500mV threshold
-        configData[3] = 0xF4;
+        configData[2] = buf[1];//0x01;       //500mV threshold
+        configData[3] = buf[0];//0xF4;
         configData[4] = buf[1];    
         configData[5] = buf[0];
-        
+        delay(5);
         configCharacteristic->writeValue(&configData[0], 20);
         float _V1[nSIN]={0};
         //float _V2[nSIN]={0};
@@ -438,18 +437,20 @@ void loop() {
         disableAllRelais();
         digitalWrite(26,0);
         delay(100); 
-        measuring = true;
         modeDataPoint = 0;
-        SIN_CHI_MODE_INITIALIZED=true;
+        measuring = true;
         dataPointsRequired = nSIN;  
         uint8_t controleData[20];
         controleData[0]=1;
         controleCharacteristic->writeValue(&controleData[0], 20);
+        SIN_CHI_MODE_INITIALIZED=true;
+        return;
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && SIN_CHI_MODE_INITIALIZED){
             measuring=false;
             saveData();
-            currentMode++;
+            currentMode=5;
+            return;
            }
         }
     }else if(currentMode == 5){
@@ -481,9 +482,10 @@ void loop() {
         dataPointsRequired = nSIN;  
         uint8_t controleData[20];
         controleData[0]=1;
-        controleCharacteristic->writeValue(&controleData[0], 20);      
+        controleCharacteristic->writeValue(&controleData[0], 20); 
+        return;     
         }else{
-          if(modeDataPoint == dataPointsRequired){
+          if(modeDataPoint == dataPointsRequired && SIN_CHII_MODE_INITIALIZED){
             measuring=false;
             float myMedian[2]={0};
             float myVarianz[2]={0};
@@ -492,15 +494,19 @@ void loop() {
             disableAllRelais();
             Serial.println("");
             Serial.println("test procedure done");
-            Serial.print("Ground: ");
-            printResult(deviceWorks[0]);
-            Serial.print("+12V: ");
-            printResult(deviceWorks[1]);
-            Serial.print("-12V: ");
-            printResult(deviceWorks[2]);
-            Serial.print("Sin: ");
-            printResult(1);
+            Serial.println("");
+            if(deviceWorks==0){
+              Serial.println("test passed!");
+            }else{
+              Serial.println("error: test NOT passed!");
+              Serial.println("for more details check results above!");
+              Serial.println("");
+              Serial.println("-------------------------------------------");
+              Serial.println("");
+            }
+            
             currentMode+=1;
+            return;
            }
         }
     }        
@@ -518,13 +524,7 @@ void disableAllRelais() {
   digitalWrite(26, 1);
   delay(100);
 }
-void printResult(bool passed){
-        if(passed){
-            Serial.println("passed");
-        }else{
-            Serial.println("ERROR");
-        }  
-  }
+
 
 int countFiles() {
   root = SD.open("/elehre");
@@ -546,7 +546,20 @@ int countFiles() {
 }
 
 bool doSomeStatistics(int dataPoints, float* median, float* varianz){
-  
+  float limit;
+  float target;
+  if(currentMode == MODE_GND){
+      limit = limitGND;
+      target= targetGND;
+      }
+  if(currentMode == MODE_P12){
+      limit = limitP12;
+      target= targetP12;
+      }
+    if(currentMode == MODE_N12){
+      limit = limitN12;  
+      target= targetN12;          
+    }
   for(int i=0;i<dataPoints;i++){
     median[0] += V1_Pointer[i]/dataPoints;
     median[1] += V2_Pointer[i]/dataPoints;
@@ -558,10 +571,10 @@ bool doSomeStatistics(int dataPoints, float* median, float* varianz){
   }
   
   Serial.println();
-  Serial.printf("Median\tCH I\t%f +- %f \n",median[0],sqrt(varianz[0])/sqrt(nGND));
-  Serial.printf("standard deviation\tCH I\t%f \n",sqrt(varianz[0]));
-  Serial.printf("Median\tCH II\t%f +- %f \n",median[1],sqrt(varianz[1])/sqrt(nGND));
-  Serial.printf("standard deviation\tCH II\t%f \n\n",sqrt(varianz[1]));
+  Serial.printf("Median\tCH I\t%f ± %f (%f±%f)\n ",median[0],sqrt(varianz[0])/sqrt(dataPoints),target,limit);
+  Serial.printf("standard deviation\tCH I\t%f (%f)\n",sqrt(varianz[0]),limitSTD);
+  Serial.printf("Median\tCH II\t%f ± %f (%f±%f)\n",median[1],sqrt(varianz[1])/sqrt(dataPoints),target,limit);
+  Serial.printf("standard deviation\tCH II\t%f (%f)\n\n",sqrt(varianz[1]),limitSTD);
   return 0;
 }
 void checkLimits(float* median, float* varianz){
@@ -580,32 +593,24 @@ void checkLimits(float* median, float* varianz){
       target= targetN12;          
     }
   
-  Serial.print("target was: ");
-  Serial.print(target);
-  Serial.print(" +- "); 
-  Serial.println(limit);
-  
   if(sqrt(varianz[0])<limitSTD && (median[0]<target+limit) && (median[0]>target-limit)){
     Serial.print("CHI looks good  -  ");
-    if(sqrt(varianz[1])<limitSTD && (median[1]<target+limit) && (median[1]>target-limit)){
-      Serial.println("CHII looks good");
-      deviceWorks[currentMode-1]=true;
-    }else{
-      Serial.println("problem on CHII");
-      }
+    deviceWorks+=0;
   }else{
-     Serial.print("problem on CHI  -  ");
-     if(sqrt(varianz[1])<limitSTD && (median[1]<target+limit) && (median[1]>target-limit)){
-      Serial.println("CHII looks good");
-      }
-      else{
-      Serial.println("problem on CHII");
-      }
-    }     
-    Serial.println("");
+    Serial.print("problem on CHI  -  ");
+    deviceWorks+=1;
+    }
+  if(sqrt(varianz[1])<limitSTD && (median[1]<target+limit) && (median[1]>target-limit)){
+    Serial.println("CHII looks good");
+    deviceWorks+=0;
+  }else{
+    deviceWorks+=1;
+    Serial.println("problem on CHII");
+    }
+  Serial.println("");
 }
 void saveData(){
-  root = SD.open("/elehre/" + Address + ".txt", FILE_APPEND);
+  root = SD.open("/elehre/"+SerialNumberString+"_"+ Address +  ".txt", FILE_APPEND);
   int saveLength =0;
   if(currentMode == 1){
       root.println("GROUND MODE");
@@ -646,4 +651,71 @@ void saveData(){
     
   }
   root.close(); 
+}
+String split(String data, char separator, int index)
+{
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
+
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
+    }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
+void getSN(){
+  root = SD.open("/elehre");
+  root.rewindDirectory();       
+  //search for file with address in name
+  while(true){       
+    File entry = root.openNextFile();
+    if (!entry) {
+          // no more files
+          break;
+        }
+        
+    char* filenameP;
+    char filename[50];
+    filenameP = (char*)entry.name();
+    memcpy(&filename[0],filenameP,50);
+    String filnameS = filename;
+    String txtRemoved = split(filnameS,'.',0);
+    String directoryRemoved = split(txtRemoved,'/',2);
+    String SN = split(directoryRemoved,'_',0);
+    String mac = split(directoryRemoved,'_',1);
+          
+    entry.close();
+    if(Address == mac){
+      Serial.println("");
+      Serial.print("Data found on SD-Card for this Distance-Box: \nSN: ");
+      Serial.print(SN);
+      Serial.print(" MAC: ");
+      Serial.println(mac);
+      Serial.println("");
+      SerialNumberString = SN;
+      snOnSDCard = true;
+      break;
+      }  
+  }
+  root.close();
+
+  if(!snOnSDCard){
+    Serial.println("no data on sd card for this Box available... creating a file..");
+    Serial.print("New SN: ");
+    sprintf(buffer, "E%04d", storedDataFiles+1);
+    SerialNumberString = buffer;  
+    root = SD.open("/elehre/" +SerialNumberString+"_"+ Address + ".txt", FILE_WRITE);
+    root.close();
+    Serial.println(SerialNumberString);
+    }
+  //send SERIALNUMBER to device
+  String myStringBuffer = SerialNumberString;
+  myStringBuffer.remove(0,1);
+  SERIALNUMBER[0] = myStringBuffer.toInt();
+
+    
 }

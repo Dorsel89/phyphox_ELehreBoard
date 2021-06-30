@@ -56,10 +56,13 @@ class PhyphoxBLE
     
 	static const UUID phyphoxExperimentServiceUUID;
 	static const UUID phyphoxDataServiceUUID;
+    static const UUID phyphoxHWConfigServiceUUID;
 
 	static const UUID experimentCharacteristicUUID;
 	static const UUID dataCharacteristicUUID;
 	static const UUID osziCharacteristicUUID;
+
+    static const UUID hwConfigCharacteristicUUID;
 
 	static const UUID configCharacteristicUUID;
 
@@ -72,6 +75,8 @@ class PhyphoxBLE
 	static BLE& ble;
 	static ReadWriteArrayGattCharacteristic<uint8_t, sizeof(data_package)> dataCharacteristic; //Note: Use { } instead of () google most vexing parse
 	static ReadWriteArrayGattCharacteristic<uint8_t, sizeof(data_package)> OsziCharacteristic;
+	static ReadWriteArrayGattCharacteristic<uint8_t, sizeof(data_package)> hwConfigCharacteristic;
+
 	static uint8_t readValue[DATASIZE];
 	static ReadWriteArrayGattCharacteristic<uint8_t, sizeof(config_package)> configCharacteristic;
 	static ReadOnlyArrayGattCharacteristic<uint8_t, sizeof(readValue)> experimentCharacteristic;
@@ -88,6 +93,7 @@ class PhyphoxBLE
 	//static void when_disconnection(const Gap::DisconnectionCallbackParams_t *);
 	static void when_subscription_received(GattAttribute::Handle_t);
 	static void configReceived(const GattWriteCallbackParams *params);
+    static void hwConfigReceived(const GattWriteCallbackParams *params);
     static void OsziControleReceived(const GattWriteCallbackParams *params);
 
 	//static void when_connected(const Gap::ConnectionCallbackParams_t *);
@@ -99,10 +105,13 @@ class PhyphoxBLE
 	static GattService phyphoxService;
 
 	static GattCharacteristic* phyphoxDataCharacteristics[];
+    static GattCharacteristic* phyphoxHWConfigCharacteristics[];
+
 	//static GattCharacteristic* phyphoxData2Characteristics[];??
 
 	static GattService phyphoxDataService;
-	
+    static GattService phyphoxHWConfigService;
+
 	static void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context);
 
 	#ifndef NDEBUG
@@ -128,6 +137,7 @@ class PhyphoxBLE
 
 	static void (*configHandler)();
     static void (*OsziHandler)();
+    static void (*hwConfigHandler)();
 
     static uint8_t macAddress[6];
 
@@ -148,6 +158,7 @@ class PhyphoxBLE
 	static void read(uint8_t*, unsigned int);
     static void readOszi(uint8_t*, unsigned int);
 	static void read(float&);
+    static void readHWConfig(uint8_t*, unsigned int);
 
 	static void writeOld(float&, float&, float&, float&);
 

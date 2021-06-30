@@ -11,8 +11,8 @@ class FLASH{
         
         void eraseFlash();
         void flashInit();
-        int8_t writeELehreConfig(float* GROUNDOFFSETS); 
-        int8_t readELehreConfig(float* GROUNDOFFSETS);
+        int8_t writeELehreConfig(uint16_t* SN, float* GROUNDOFFSETS); 
+        int8_t readELehreConfig(uint16_t* SN, float* GROUNDOFFSETS);
         FlashIAP flash;
         int8_t status;
 

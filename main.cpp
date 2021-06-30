@@ -17,6 +17,8 @@
 #define MODE_FAST23_ADS1115 2
 #define MODE_FAST_ONBOARD 3
 
+volatile uint16_t SERIALNUMBER;
+
 bool zeroRuns=true;
 
 volatile bool writeOffsets = false;
@@ -33,6 +35,7 @@ volatile float threshold =0;
 
 
 DigitalOut myLED(P0_4); //rote led
+//&P0.23
 //AnalogIn onBoardADC1(P0_4); //rote led
 
 PinName scl = p13; //P0_13;    
@@ -92,7 +95,24 @@ void powerOn() {
     
 }
 
-
+void getDeviceName(char* myDeviceName){
+    uint16_t mySN[1];
+    float myOffsets[2] ;
+    myCONFIG.readELehreConfig(mySN, myOffsets);
+     
+    if(mySN[0] == 0xFFFF){
+        mySN[0]=0;
+    }
+   
+    std::string s = std::to_string(mySN[0]);
+    if ( s.size() < 4 ){
+        s = std::string(4 - s.size(), '0') + s;
+    }
+    std::string S;
+    S.append("E-Lehre E");
+    S.append(s);
+    strcpy(myDeviceName, S.c_str());  
+ }    
 
 bool getNBit(uint8_t byte, int position){
     return byte & (1<<position);
@@ -101,34 +121,40 @@ void receiveOsziControleData(){
     PhyphoxBLE::readOszi(&osziControlgData[0],20);
     activeTrigger = osziControlgData[0];
 }
+void receivedSN() {           // get data from phyphox app
+    uint8_t myDataBuffer[20] = {0};
+    PhyphoxBLE::readHWConfig(&myDataBuffer[0],20);
+    
+    uint8_t myFlags = myDataBuffer[0];
 
+    uint16_t mySNbuffer[1] = {SERIALNUMBER};
+    if(getNBit(myFlags, 0)){
+        mySNbuffer[0] = myDataBuffer[2] << 8 | myDataBuffer[1];
+    }
+    
+    float myOffsetbuffer[2] = {GROUNDOFFSET[0],GROUNDOFFSET[1]};
+    if(getNBit(myFlags, 1)){
+        u.b[0] = myDataBuffer[3];
+        u.b[1] = myDataBuffer[4];
+        u.b[2] = myDataBuffer[5];
+        u.b[3] = myDataBuffer[6];
+        GROUNDOFFSET[0] = -1.0*u.f;
+        u.b[0] = myDataBuffer[7];
+        u.b[1] = myDataBuffer[8];
+        u.b[2] = myDataBuffer[9];
+        u.b[3] = myDataBuffer[10];
+        GROUNDOFFSET[1] =-1.0* u.f;
+    }
+
+    myCONFIG.writeELehreConfig(mySNbuffer, myOffsetbuffer);
+  }
 /**
     Gets data from PhyPhox app and uses it to switch between modes and inputs
 */
 void receivedData() {           // get data from phyphox app
   
   PhyphoxBLE::read(&configData[0],20);
-    writeOffsets = getNBit(configData[0],0);  //false
-  if(writeOffsets){
 
-    u.b[0] = configData[1];
-    u.b[1] = configData[2];
-    u.b[2] = configData[3];
-    u.b[3] = configData[4];
-    GROUNDOFFSET[0] = -1.0*u.f;
-    u.b[0] = configData[5];
-    u.b[1] = configData[6];
-    u.b[2] = configData[7];
-    u.b[3] = configData[8];
-    GROUNDOFFSET[1] =-1.0* u.f;
-    if(getNBit(configData[0],1)){
-       float floats[2];
-       floats[0]=GROUNDOFFSET[0];
-       floats[1]=GROUNDOFFSET[1];
-       myCONFIG.writeELehreConfig(floats); 
-    } 
-    
-  }else {
     SLEEP=false;
     t.stop();
     t.reset();
@@ -143,7 +169,6 @@ void receivedData() {           // get data from phyphox app
     ads.setDataRate(targetRate);
     threshold = 0.001* (configData[3] | (configData[2] << 8));
     multipleValuesAmount = (configData[5] | (configData[4] << 8));
-  }
 
 }
 
@@ -269,9 +294,10 @@ t.stop();
 }
 
 void initOffset(){
+    uint16_t snBufF[1] = {0};
     float arrayBufF[2] = {0};
     int8_t error=0;
-    error = myCONFIG.readELehreConfig(arrayBufF);
+    error = myCONFIG.readELehreConfig(snBufF, arrayBufF);
     if(arrayBufF[0]<0.5 && arrayBufF[0]>-0.5){
         GROUNDOFFSET[0] = arrayBufF[0];
     }
@@ -287,23 +313,26 @@ int main() {
 
     myLED=1; //turn led off
     initOffset();
-  //power_save();
+    
   
-  float value[4];                           // the array where the values should be stored in.
-  
-  ads.setGain(GAIN_TWO);
-  ads.setDataRate(currentDataRate);
+    float value[4];                           // the array where the values should be stored in.
+    
+    ads.setGain(GAIN_TWO);
+    ads.setDataRate(currentDataRate);
   
 
     ThisThread::sleep_for(100ms);
     t.reset();
     t.start();
     ThisThread::sleep_for(100ms);
-  PhyphoxBLE::start("elehre");              // start BLE
-  PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
-  PhyphoxBLE::OsziHandler = &receiveOsziControleData;   // used to receive data from PhyPhox.
-  
-  //powerOnBlink.attach(&powerOn,100ms);
+    char DEVICENAME[30];
+    getDeviceName(DEVICENAME);
+    PhyphoxBLE::start(DEVICENAME);  
+    PhyphoxBLE::configHandler = &receivedData;   // used to receive data from PhyPhox.
+    PhyphoxBLE::OsziHandler = &receiveOsziControleData;   // used to receive data from PhyPhox.
+    PhyphoxBLE::hwConfigHandler = &receivedSN;
+
+    powerOnBlink.attach(&powerOn,100ms);
 
 while (true) {                            // start loop.
     //ThisThread::sleep_for(100ms);
@@ -320,6 +349,7 @@ while (true) {                            // start loop.
             
             if(fastMode && activeTrigger){
                 //FASTMODE
+                powerOnBlink.detach();
                 myLED = 0;
                 activeTrigger = false;
                 float voltage[multipleValuesAmount];
@@ -341,6 +371,7 @@ while (true) {                            // start loop.
                 }
         
                 myLED=1;
+                powerOnBlink.attach(&powerOn,100ms);
             }else if(!fastMode) {
                 //LIVE MODE
                 if(!internalADC){

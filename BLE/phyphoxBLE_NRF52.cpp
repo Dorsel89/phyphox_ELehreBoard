@@ -5,8 +5,9 @@ const UUID PhyphoxBLE::experimentCharacteristicUUID = UUID(phyphoxBleExperimentC
 
 const UUID PhyphoxBLE::phyphoxDataServiceUUID = UUID(phyphoxBleDataServiceUUID);
 const UUID PhyphoxBLE::dataCharacteristicUUID = UUID(phyphoxBleDataCharacteristicUUID);
+const UUID PhyphoxBLE::phyphoxHWConfigServiceUUID = UUID(phyphoxBleHWConfigServiceUUID);
 
-
+const UUID PhyphoxBLE::hwConfigCharacteristicUUID = UUID(phyphoxBleHWConfigCharacteristicUUID);
 const UUID PhyphoxBLE::configCharacteristicUUID = UUID(phyphoxBleConfigCharacteristicUUID);
 const UUID PhyphoxBLE::osziCharacteristicUUID = UUID(phyphoxBleOsziCharacteristicUUID);
 
@@ -30,6 +31,8 @@ uint8_t PhyphoxBLE::readValue[DATASIZE] = {0};
 ReadWriteArrayGattCharacteristic<uint8_t, sizeof(PhyphoxBLE::data_package)> PhyphoxBLE::dataCharacteristic{PhyphoxBLE::dataCharacteristicUUID, PhyphoxBLE::data_package, GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY}; //Note: Use { } instead of () google most vexing parse
 ReadWriteArrayGattCharacteristic<uint8_t, sizeof(PhyphoxBLE::data_package)> PhyphoxBLE::OsziCharacteristic{PhyphoxBLE::osziCharacteristicUUID, PhyphoxBLE::data_package, GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY}; //Note: Use { } instead of () google most vexing parse
 ReadWriteArrayGattCharacteristic<uint8_t, sizeof(PhyphoxBLE::config_package)> PhyphoxBLE::configCharacteristic{PhyphoxBLE::configCharacteristicUUID, PhyphoxBLE::config_package, GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY};
+ReadWriteArrayGattCharacteristic<uint8_t, sizeof(PhyphoxBLE::data_package)> PhyphoxBLE::hwConfigCharacteristic{PhyphoxBLE::hwConfigCharacteristicUUID, PhyphoxBLE::data_package, GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY}; //Note: Use { } instead of () google most vexing parse
+
 
 //Experiment Transfer
 ReadOnlyArrayGattCharacteristic<uint8_t, sizeof(PhyphoxBLE::readValue)> PhyphoxBLE::experimentCharacteristic{PhyphoxBLE::experimentCharacteristicUUID, PhyphoxBLE::readValue, GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY};
@@ -44,9 +47,10 @@ GattCharacteristic* PhyphoxBLE::phyphoxCharacteristics[1] = {&PhyphoxBLE::experi
 GattService PhyphoxBLE::phyphoxService{PhyphoxBLE::phyphoxExperimentServiceUUID, PhyphoxBLE::phyphoxCharacteristics, sizeof(PhyphoxBLE::phyphoxCharacteristics) / sizeof(GattCharacteristic *)};
 
 GattCharacteristic* PhyphoxBLE::phyphoxDataCharacteristics[3] = {&PhyphoxBLE::dataCharacteristic,&PhyphoxBLE::OsziCharacteristic, &PhyphoxBLE::configCharacteristic};
-//GattCharacteristic* PhyphoxBLE::phyphoxDataCharacteristics[2] = {&PhyphoxBLE::dataCharacteristic, &PhyphoxBLE::configCharacteristic};
-
 GattService PhyphoxBLE::phyphoxDataService{PhyphoxBLE::phyphoxDataServiceUUID, PhyphoxBLE::phyphoxDataCharacteristics, sizeof(PhyphoxBLE::phyphoxDataCharacteristics) / sizeof(GattCharacteristic *)};
+
+GattCharacteristic* PhyphoxBLE::phyphoxHWConfigCharacteristics[1] = {&PhyphoxBLE::hwConfigCharacteristic};
+GattService PhyphoxBLE::phyphoxHWConfigService{PhyphoxBLE::phyphoxHWConfigServiceUUID, PhyphoxBLE::phyphoxHWConfigCharacteristics, sizeof(PhyphoxBLE::phyphoxHWConfigCharacteristics) / sizeof(GattCharacteristic *)};
 
 uint8_t* PhyphoxBLE::data = nullptr; //this pointer points to the data the user wants to write in the characteristic
 uint8_t* PhyphoxBLE::config =nullptr;
@@ -57,6 +61,7 @@ size_t PhyphoxBLE::expLen = 0; //try o avoid this maybe use std::array or std::v
 
 void (*PhyphoxBLE::configHandler)() = nullptr;
 void (*PhyphoxBLE::OsziHandler)() = nullptr;
+void (*PhyphoxBLE::hwConfigHandler)() = nullptr;
 
 void PhyphoxBleEventHandler::onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
 {
@@ -132,8 +137,17 @@ void PhyphoxBLE::configReceived(const GattWriteCallbackParams *params)
             transferQueue.call( OsziHandler ); 		
         }
     }
-    
+    if (params->handle == PhyphoxBLE::hwConfigCharacteristic.getValueHandle() ) {
+        if(hwConfigHandler != nullptr){
+            transferQueue.call( hwConfigHandler ); 		
+        }
+    }
 	
+}
+void PhyphoxBLE::readHWConfig(uint8_t *arrayPointer, unsigned int arraySize)
+{
+	uint16_t myArraySize = arraySize;
+	ble.gattServer().read(hwConfigCharacteristic.getValueHandle(), arrayPointer, &myArraySize);
 }
 void PhyphoxBLE::OsziControleReceived(const GattWriteCallbackParams *params)
 {
@@ -212,8 +226,8 @@ void PhyphoxBLE::bleInitComplete(BLE::InitializationCompleteCallbackContext* par
 	ble::AdvertisingDataBuilder adv_data_builder(_adv_buffer);
 	ble::AdvertisingParameters adv_parameters(ble::advertising_type_t::CONNECTABLE_UNDIRECTED, ble::adv_interval_t(ble::millisecond_t(1000)));
 	adv_data_builder.setFlags();
-    adv_data_builder.setLocalServiceList(mbed::make_Span(&phyphoxDataServiceUUID, 1));  //changed for test "phyphoxExperimentServiceUUID"
-    ble_error_t error = adv_data_builder.setName(name);
+    adv_data_builder.setLocalServiceList(mbed::make_Span(&phyphoxHWConfigServiceUUID, 1));  
+    //ble_error_t error = adv_data_builder.setName(name);
 
 
   	#ifndef NDEBUG
@@ -228,8 +242,12 @@ void PhyphoxBLE::bleInitComplete(BLE::InitializationCompleteCallbackContext* par
 
     ble.gap().setAdvertisingParameters(ble::LEGACY_ADVERTISING_HANDLE, adv_parameters);
     ble.gap().setAdvertisingPayload(ble::LEGACY_ADVERTISING_HANDLE,adv_data_builder.getAdvertisingData());
+    adv_data_builder.clear();
+    adv_data_builder.setName(name);
+    ble.gap().setAdvertisingScanResponse(ble::LEGACY_ADVERTISING_HANDLE,adv_data_builder.getAdvertisingData());
     ble.gattServer().addService(phyphoxService);
     ble.gattServer().addService(phyphoxDataService);
+    ble.gattServer().addService(phyphoxHWConfigService);
  
 	ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 	#ifndef NDEBUG
