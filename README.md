@@ -32,8 +32,8 @@ https://www.rapidtables.com/convert/number/binary-to-hex.html
 
 Bit 7 | Bit 6 | Bit 5 | Bit 4 | Bit 3 | Bit 2 | Bit 1 | Bit 0
 ------|-------|-------|-------|-------|-------|-------|-------
-| | | | 0: Threshold falling edge | 0: Disable CH II| 0: Disable CH I|  0: Live-Mode | 0: Measure-Mode
-| | | | 1: Threshold rising edge | 1: Enable CH II| 1: Enable CH I | 1: Oscilloscope-Mode| 1: ConfigMode
+| | |0: Trigger on CHA | 0: Threshold falling edge | 0:  ADS1115 CHB |  0: Disable CHB|  0: ADS1115 CHA|  0: Disable CHA | 0: 0: Live-Mode
+| | |1: Trigger on CHB | 1: Threshold rising edge | 1: Internal ADC CHB| 1: Enable CHB|1: Internal ADC CHA | 1: Enable CHA | 1: Oscilloscope-Mode
 
 
 ### Measure-Mode *(Byte 0, Bit 0 = 0)* <a name="Measure-Mode"></a>
