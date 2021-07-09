@@ -28,25 +28,24 @@ volatile bool fastMode = false;
 volatile bool risingEdge = false;
 volatile bool internalADC = false;
 
-volatile float GROUNDOFFSET[2] = {0};// = 0.025187502;
+volatile float GROUNDOFFSET[2] = {0};
 
 volatile bool SLEEP = true;
 volatile float threshold =0;
 
 
-DigitalOut myLED(P0_4); //rote led
-//&P0.23
-//AnalogIn onBoardADC1(P0_4); //rote led
+DigitalOut myLED(P0_23); //rote led
+
 
 PinName scl = p13; //P0_13;    
 PinName sda = p14; 
 PinName rdy = p15;
 
-//float R1 =68;
-//float R2 =480;
+float R1 =68;
+float R2 =480;
 
-float R1 =10;
-float R2 =130;
+//float R1 =10;
+//float R2 =130;
 
 DigitalIn adcReady(rdy);
 
