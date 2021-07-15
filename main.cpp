@@ -35,6 +35,7 @@ volatile float threshold =0;
 
 
 DigitalOut myLED(P0_23); //rote led
+//DigitalOut myLED(P0_4); //rote led
 
 
 PinName scl = p13; //P0_13;    
@@ -102,6 +103,10 @@ void getDeviceName(char* myDeviceName){
     if(mySN[0] == 0xFFFF){
         mySN[0]=0;
     }
+    else {
+        GROUNDOFFSET[0]=myOffsets[0];
+        GROUNDOFFSET[1]=myOffsets[1];
+    }
    
     std::string s = std::to_string(mySN[0]);
     if ( s.size() < 4 ){
@@ -131,7 +136,7 @@ void receivedSN() {           // get data from phyphox app
         mySNbuffer[0] = myDataBuffer[2] << 8 | myDataBuffer[1];
     }
     
-    float myOffsetbuffer[2] = {GROUNDOFFSET[0],GROUNDOFFSET[1]};
+    
     if(getNBit(myFlags, 1)){
         u.b[0] = myDataBuffer[3];
         u.b[1] = myDataBuffer[4];
@@ -144,6 +149,7 @@ void receivedSN() {           // get data from phyphox app
         u.b[3] = myDataBuffer[10];
         GROUNDOFFSET[1] =-1.0* u.f;
     }
+    float myOffsetbuffer[2] = {GROUNDOFFSET[0],GROUNDOFFSET[1]};
 
     myCONFIG.writeELehreConfig(mySNbuffer, myOffsetbuffer);
   }
@@ -311,7 +317,7 @@ void initOffset(){
 int main() {
 
     myLED=1; //turn led off
-    initOffset();
+    //initOffset();
     
   
     float value[4];                           // the array where the values should be stored in.
